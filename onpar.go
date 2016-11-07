@@ -6,48 +6,6 @@ import (
 	"testing"
 )
 
-var (
-	current *level
-)
-
-func init() {
-	current = &level{}
-}
-
-type level struct {
-	before, after *reflect.Value
-	name          string
-	specs         []specInfo
-
-	children []*level
-	parent   *level
-
-	beforeEachArgs []reflect.Value
-}
-
-type specInfo struct {
-	name string
-	f    *reflect.Value
-}
-
-func BeforeEach(f interface{}) {
-	if current.before != nil {
-		panic(fmt.Sprintf("Level '%s' already has a registered BeforeEach", current.name))
-	}
-
-	v := reflect.ValueOf(f)
-	current.before = &v
-}
-
-func AfterEach(f interface{}) {
-	if current.after != nil {
-		panic(fmt.Sprintf("Level '%s' already has a registered AfterEach", current.name))
-	}
-
-	v := reflect.ValueOf(f)
-	current.after = &v
-}
-
 func Spec(name string, f interface{}) {
 	v := reflect.ValueOf(f)
 	spec := specInfo{
@@ -71,6 +29,24 @@ func Group(name string, f func()) {
 	current = oldLevel
 }
 
+func BeforeEach(f interface{}) {
+	if current.before != nil {
+		panic(fmt.Sprintf("Level '%s' already has a registered BeforeEach", current.name))
+	}
+
+	v := reflect.ValueOf(f)
+	current.before = &v
+}
+
+func AfterEach(f interface{}) {
+	if current.after != nil {
+		panic(fmt.Sprintf("Level '%s' already has a registered AfterEach", current.name))
+	}
+
+	v := reflect.ValueOf(f)
+	current.after = &v
+}
+
 func Run(t *testing.T) {
 
 	traverse(current, func(l *level) bool {
@@ -87,6 +63,30 @@ func Run(t *testing.T) {
 		}
 		return true
 	})
+}
+
+var (
+	current *level
+)
+
+func init() {
+	current = &level{}
+}
+
+type level struct {
+	before, after *reflect.Value
+	name          string
+	specs         []specInfo
+
+	children []*level
+	parent   *level
+
+	beforeEachArgs []reflect.Value
+}
+
+type specInfo struct {
+	name string
+	f    *reflect.Value
 }
 
 func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]reflect.Value) {
