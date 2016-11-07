@@ -16,8 +16,8 @@ func init() {
 
 type level struct {
 	before, after *reflect.Value
-	description   string
-	its           []it
+	name          string
+	specs         []specInfo
 
 	children []*level
 	parent   *level
@@ -25,14 +25,14 @@ type level struct {
 	beforeEachArgs []reflect.Value
 }
 
-type it struct {
-	description string
-	f           *reflect.Value
+type specInfo struct {
+	name string
+	f    *reflect.Value
 }
 
 func BeforeEach(f interface{}) {
 	if current.before != nil {
-		panic(fmt.Sprintf("Level '%s' already has a registered BeforeEach", current.description))
+		panic(fmt.Sprintf("Level '%s' already has a registered BeforeEach", current.name))
 	}
 
 	v := reflect.ValueOf(f)
@@ -41,22 +41,26 @@ func BeforeEach(f interface{}) {
 
 func AfterEach(f interface{}) {
 	if current.after != nil {
-		panic(fmt.Sprintf("Level '%s' already has a registered AfterEach", current.description))
+		panic(fmt.Sprintf("Level '%s' already has a registered AfterEach", current.name))
 	}
 
 	v := reflect.ValueOf(f)
 	current.after = &v
 }
 
-func It(description string, f interface{}) {
+func Spec(name string, f interface{}) {
 	v := reflect.ValueOf(f)
-	current.its = append(current.its, it{description: description, f: &v})
+	spec := specInfo{
+		name: name,
+		f:    &v,
+	}
+	current.specs = append(current.specs, spec)
 }
 
-func Describe(description string, f func()) {
+func Group(name string, f func()) {
 	newLevel := &level{
-		description: description,
-		parent:      current,
+		name:   name,
+		parent: current,
 	}
 
 	current.children = append(current.children, newLevel)
@@ -69,45 +73,62 @@ func Describe(description string, f func()) {
 
 func Run(t *testing.T) {
 
-	t.Parallel()
-
 	traverse(current, func(l *level) bool {
-		for _, i := range l.its {
-			t.Run(i.description, func(tt *testing.T) {
+		for _, spec := range l.specs {
+			desc := buildDesc(l, spec)
+			t.Run(desc, func(tt *testing.T) {
 				tt.Parallel()
-				args := []reflect.Value{
-					reflect.ValueOf(tt),
-				}
-				levelArgs := make(map[*level][]reflect.Value)
 
-				traverse(current, func(ll *level) bool {
-					if ll.before != nil {
-						args = append(args, ll.before.Call(args)...)
-						levelArgs[ll] = args
-					}
+				args, levelArgs := invokeBeforeEach(tt, l)
+				spec.f.Call(args)
 
-					return ll != l
-				})
-
-				i.f.Call(args)
-
-				rTraverse(l, func(ll *level) {
-					beforeEachArgs := levelArgs[ll]
-					if beforeEachArgs == nil {
-						beforeEachArgs = []reflect.Value{
-							reflect.ValueOf(tt),
-						}
-					}
-
-					if ll.after != nil {
-						ll.after.Call(beforeEachArgs)
-					}
-				})
+				invokeAfterEach(tt, l, levelArgs)
 			})
 		}
 		return true
 	})
+}
 
+func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]reflect.Value) {
+	args := []reflect.Value{
+		reflect.ValueOf(tt),
+	}
+	levelArgs := make(map[*level][]reflect.Value)
+
+	traverse(current, func(ll *level) bool {
+		if ll.before != nil {
+			args = append(args, ll.before.Call(args)...)
+			levelArgs[ll] = args
+		}
+
+		return ll != l
+	})
+	return args, levelArgs
+}
+
+func invokeAfterEach(tt *testing.T, l *level, levelArgs map[*level][]reflect.Value) {
+	rTraverse(l, func(ll *level) {
+		beforeEachArgs := levelArgs[ll]
+		if beforeEachArgs == nil {
+			beforeEachArgs = []reflect.Value{
+				reflect.ValueOf(tt),
+			}
+		}
+
+		if ll.after != nil {
+			ll.after.Call(beforeEachArgs)
+		}
+	})
+}
+
+func buildDesc(l *level, i specInfo) string {
+	var desc string
+	traverse(current, func(ll *level) bool {
+		desc = fmt.Sprintf("%s/%s", desc, ll.name)
+		return ll != l
+	})
+
+	return fmt.Sprintf("%s/%s", desc, i.name)
 }
 
 func traverse(l *level, f func(*level) bool) {

@@ -7,15 +7,19 @@ import (
 )
 
 func TestPassBeforeEachOutputToIt(t *testing.T) {
+	c := make(chan string, 100)
 	onpar.AfterEach(func(t *testing.T) {
 	})
 
-	onpar.Describe("DA", func() {
-		onpar.BeforeEach(func(t *testing.T) (int, string) {
-			return 99, "something"
+	onpar.Group("DA", func() {
+		onpar.BeforeEach(func(t *testing.T) (int, string, chan string) {
+			c <- "DA-BeforeEach"
+			return 99, "something", c
 		})
 
-		onpar.AfterEach(func(t *testing.T, i int, s string) {
+		onpar.AfterEach(func(t *testing.T, i int, s string, c chan string) {
+			c <- "DA-AfterEach"
+
 			if i != 99 {
 				t.Errorf("expected %d = %d", i, 99)
 			}
@@ -25,7 +29,8 @@ func TestPassBeforeEachOutputToIt(t *testing.T) {
 			}
 		})
 
-		onpar.It("A", func(t *testing.T, i int, s string) {
+		onpar.Spec("A", func(t *testing.T, i int, s string, c chan string) {
+			c <- "DA-A"
 			if i != 99 {
 				t.Errorf("expected %d = %d", i, 99)
 			}
@@ -35,12 +40,14 @@ func TestPassBeforeEachOutputToIt(t *testing.T) {
 			}
 		})
 
-		onpar.Describe("DB", func() {
-			onpar.BeforeEach(func(t *testing.T, i int, s string) float64 {
+		onpar.Group("DB", func() {
+			onpar.BeforeEach(func(t *testing.T, i int, s string, c chan string) float64 {
+				c <- "DB-BeforeEach"
 				return 101
 			})
 
-			onpar.It("B", func(t *testing.T, i int, s string, f float64) {
+			onpar.Spec("B", func(t *testing.T, i int, s string, c chan string, f float64) {
+				c <- "DB-BEach"
 				if i != 99 {
 					t.Errorf("expected %d = %d", i, 99)
 				}
@@ -56,5 +63,11 @@ func TestPassBeforeEachOutputToIt(t *testing.T) {
 		})
 	})
 
-	onpar.Run(t)
+	t.Run("", func(tt *testing.T) {
+		onpar.Run(tt)
+	})
+
+	if len(c) != 7 {
+		t.Errorf("expected c (len=%d) to have len %d", len(c), 7)
+	}
 }
