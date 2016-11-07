@@ -63,15 +63,7 @@ func Run(t *testing.T) {
 
 	traverse(current, func(l *level) bool {
 		for _, spec := range l.specs {
-			desc := buildDesc(l, spec)
-			t.Run(desc, func(tt *testing.T) {
-				tt.Parallel()
-
-				args, levelArgs := invokeBeforeEach(tt, l)
-				spec.f.Call(args)
-
-				invokeAfterEach(tt, l, levelArgs)
-			})
+			spec.invoke(t, l)
 		}
 		return true
 	})
@@ -95,6 +87,18 @@ type level struct {
 type specInfo struct {
 	name string
 	f    *reflect.Value
+}
+
+func (s specInfo) invoke(t *testing.T, l *level) {
+	desc := buildDesc(l, s)
+	t.Run(desc, func(tt *testing.T) {
+		tt.Parallel()
+
+		args, levelArgs := invokeBeforeEach(tt, l)
+		s.f.Call(args)
+
+		invokeAfterEach(tt, l, levelArgs)
+	})
 }
 
 func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]reflect.Value) {

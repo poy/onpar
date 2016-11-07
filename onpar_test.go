@@ -29,11 +29,11 @@ func TestOrder(t *testing.T) {
 
 		onpar.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
 			if i != 99 {
-				t.Errorf("expected %d = %d", i, 99)
+				t.Fatalf("expected %d = %d", i, 99)
 			}
 
 			if s != "something" {
-				t.Errorf("expected %s = %s", s, "something")
+				t.Fatalf("expected %s = %s", s, "something")
 			}
 
 			o.Use("DA-AfterEach")
@@ -42,11 +42,11 @@ func TestOrder(t *testing.T) {
 
 		onpar.Spec("A", func(t *testing.T, i int, s string, o *testObject) {
 			if i != 99 {
-				t.Errorf("expected %d = %d", i, 99)
+				t.Fatalf("expected %d = %d", i, 99)
 			}
 
 			if s != "something" {
-				t.Errorf("expected %s = %s", s, "something")
+				t.Fatalf("expected %s = %s", s, "something")
 			}
 
 			o.Use("DA-A")
@@ -65,15 +65,30 @@ func TestOrder(t *testing.T) {
 			onpar.Spec("B", func(t *testing.T, i int, s string, o *testObject, f float64) {
 				o.Use("DB-B")
 				if i != 99 {
-					t.Errorf("expected %d = %d", i, 99)
+					t.Fatalf("expected %d = %d", i, 99)
 				}
 
 				if s != "something" {
-					t.Errorf("expected %s = %s", s, "something")
+					t.Fatalf("expected %s = %s", s, "something")
 				}
 
 				if f != 101 {
-					t.Errorf("expected %f = %f", f, 101.0)
+					t.Fatalf("expected %f = %f", f, 101.0)
+				}
+			})
+
+			onpar.Spec("C", func(t *testing.T, i int, s string, o *testObject, f float64) {
+				o.Use("DB-C")
+				if i != 99 {
+					t.Fatalf("expected %d = %d", i, 99)
+				}
+
+				if s != "something" {
+					t.Fatalf("expected %s = %s", s, "something")
+				}
+
+				if f != 101 {
+					t.Fatalf("expected %f = %f", f, 101.0)
 				}
 			})
 		})
@@ -83,34 +98,47 @@ func TestOrder(t *testing.T) {
 		onpar.Run(tt)
 	})
 
-	if len(objs) != 2 {
-		t.Errorf("expected objs (len=%d) to have len %d", len(objs), 2)
+	if len(objs) != 3 {
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objs), 3)
 	}
 
 	objA := findSpec(objs, "DA-A")
 	if objA == nil {
-		t.Errorf("unable to find spec A")
+		t.Fatal("unable to find spec A")
 	}
 
 	if len(objA.c) != 3 {
-		t.Errorf("expected objs (len=%d) to have len %d", len(objA.c), 3)
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objA.c), 3)
 	}
 
 	if !reflect.DeepEqual(objA.c, []string{"DA-BeforeEach", "DA-A", "DA-AfterEach"}) {
-		t.Errorf("invalid call order for spec A: %v", objA.c)
+		t.Fatalf("invalid call order for spec A: %v", objA.c)
 	}
 
 	objB := findSpec(objs, "DB-B")
 	if objB == nil {
-		t.Errorf("unable to find spec B")
+		t.Fatal("unable to find spec B")
 	}
 
 	if len(objB.c) != 5 {
-		t.Errorf("expected objs (len=%d) to have len %d", len(objB.c), 5)
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objB.c), 5)
 	}
 
 	if !reflect.DeepEqual(objB.c, []string{"DA-BeforeEach", "DB-BeforeEach", "DB-B", "DB-AfterEach", "DA-AfterEach"}) {
-		t.Errorf("invalid call order for spec A: %v", objB.c)
+		t.Fatalf("invalid call order for spec A: %v", objB.c)
+	}
+
+	objC := findSpec(objs, "DB-C")
+	if objC == nil {
+		t.Fatal("unable to find spec C")
+	}
+
+	if len(objC.c) != 5 {
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objC.c), 5)
+	}
+
+	if !reflect.DeepEqual(objC.c, []string{"DA-BeforeEach", "DB-BeforeEach", "DB-C", "DB-AfterEach", "DA-AfterEach"}) {
+		t.Fatalf("invalid call order for spec A: %v", objC.c)
 	}
 }
 
