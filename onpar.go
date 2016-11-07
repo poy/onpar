@@ -6,6 +6,9 @@ import (
 	"testing"
 )
 
+// Spec is a test that runs in parallel with other specs. The provided function
+// takes the `testing.T` for test assertions and any arguments the `BeforeEach()`
+// returns.
 func Spec(name string, f interface{}) {
 	v := reflect.ValueOf(f)
 	spec := specInfo{
@@ -15,6 +18,8 @@ func Spec(name string, f interface{}) {
 	current.specs = append(current.specs, spec)
 }
 
+// Group is used to gather and categorize specs. Each group can have a single
+// `BeforeEach()` and `AfterEach()`.
 func Group(name string, f func()) {
 	newLevel := &level{
 		name:   name,
@@ -29,6 +34,9 @@ func Group(name string, f func()) {
 	current = oldLevel
 }
 
+// BeforeEach is used for any setup that may be required for the specs.
+// Each argument returned will be required to be received by following specs.
+// Outer BeforeEaches are invoked before inner ones.
 func BeforeEach(f interface{}) {
 	if current.before != nil {
 		panic(fmt.Sprintf("Level '%s' already has a registered BeforeEach", current.name))
@@ -38,6 +46,9 @@ func BeforeEach(f interface{}) {
 	current.before = &v
 }
 
+// AfterEach is used to cleanup anything from the specs or BeforeEaches.
+// The function takes arguments the same as specs. Inner AfterEaches are invoked
+// before outer ones.
 func AfterEach(f interface{}) {
 	if current.after != nil {
 		panic(fmt.Sprintf("Level '%s' already has a registered AfterEach", current.name))
@@ -47,6 +58,7 @@ func AfterEach(f interface{}) {
 	current.after = &v
 }
 
+// Run is used to initiate the tests.
 func Run(t *testing.T) {
 
 	traverse(current, func(l *level) bool {
@@ -66,12 +78,8 @@ func Run(t *testing.T) {
 }
 
 var (
-	current *level
+	current *level = new(level)
 )
-
-func init() {
-	current = &level{}
-}
 
 type level struct {
 	before, after *reflect.Value
