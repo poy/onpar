@@ -1,25 +1,33 @@
 package onpar_test
 
 import (
+	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/apoydence/onpar"
 )
 
-func TestPassBeforeEachOutputToIt(t *testing.T) {
-	c := make(chan string, 100)
+func TestOrder(t *testing.T) {
+	var lock sync.Mutex
+	var objs []*testObject
+
 	onpar.AfterEach(func(t *testing.T) {
 	})
 
 	onpar.Group("DA", func() {
-		onpar.BeforeEach(func(t *testing.T) (int, string, chan string) {
-			c <- "DA-BeforeEach"
-			return 99, "something", c
+		onpar.BeforeEach(func(t *testing.T) (int, string, *testObject) {
+			obj := NewTestObject()
+			obj.Use("DA-BeforeEach")
+
+			lock.Lock()
+			objs = append(objs, obj)
+			lock.Unlock()
+
+			return 99, "something", obj
 		})
 
-		onpar.AfterEach(func(t *testing.T, i int, s string, c chan string) {
-			c <- "DA-AfterEach"
-
+		onpar.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
 			if i != 99 {
 				t.Errorf("expected %d = %d", i, 99)
 			}
@@ -27,10 +35,12 @@ func TestPassBeforeEachOutputToIt(t *testing.T) {
 			if s != "something" {
 				t.Errorf("expected %s = %s", s, "something")
 			}
+
+			o.Use("DA-AfterEach")
+			o.Close()
 		})
 
-		onpar.Spec("A", func(t *testing.T, i int, s string, c chan string) {
-			c <- "DA-A"
+		onpar.Spec("A", func(t *testing.T, i int, s string, o *testObject) {
 			if i != 99 {
 				t.Errorf("expected %d = %d", i, 99)
 			}
@@ -38,16 +48,22 @@ func TestPassBeforeEachOutputToIt(t *testing.T) {
 			if s != "something" {
 				t.Errorf("expected %s = %s", s, "something")
 			}
+
+			o.Use("DA-A")
 		})
 
 		onpar.Group("DB", func() {
-			onpar.BeforeEach(func(t *testing.T, i int, s string, c chan string) float64 {
-				c <- "DB-BeforeEach"
+			onpar.BeforeEach(func(t *testing.T, i int, s string, o *testObject) float64 {
+				o.Use("DB-BeforeEach")
 				return 101
 			})
 
-			onpar.Spec("B", func(t *testing.T, i int, s string, c chan string, f float64) {
-				c <- "DB-BEach"
+			onpar.AfterEach(func(t *testing.T, i int, s string, o *testObject, f float64) {
+				o.Use("DB-AfterEach")
+			})
+
+			onpar.Spec("B", func(t *testing.T, i int, s string, o *testObject, f float64) {
+				o.Use("DB-B")
 				if i != 99 {
 					t.Errorf("expected %d = %d", i, 99)
 				}
@@ -67,7 +83,66 @@ func TestPassBeforeEachOutputToIt(t *testing.T) {
 		onpar.Run(tt)
 	})
 
-	if len(c) != 7 {
-		t.Errorf("expected c (len=%d) to have len %d", len(c), 7)
+	if len(objs) != 2 {
+		t.Errorf("expected objs (len=%d) to have len %d", len(objs), 2)
 	}
+
+	objA := findSpec(objs, "DA-A")
+	if objA == nil {
+		t.Errorf("unable to find spec A")
+	}
+
+	if len(objA.c) != 3 {
+		t.Errorf("expected objs (len=%d) to have len %d", len(objA.c), 3)
+	}
+
+	if !reflect.DeepEqual(objA.c, []string{"DA-BeforeEach", "DA-A", "DA-AfterEach"}) {
+		t.Errorf("invalid call order for spec A: %v", objA.c)
+	}
+
+	objB := findSpec(objs, "DB-B")
+	if objB == nil {
+		t.Errorf("unable to find spec B")
+	}
+
+	if len(objB.c) != 5 {
+		t.Errorf("expected objs (len=%d) to have len %d", len(objB.c), 5)
+	}
+
+	if !reflect.DeepEqual(objB.c, []string{"DA-BeforeEach", "DB-BeforeEach", "DB-B", "DB-AfterEach", "DA-AfterEach"}) {
+		t.Errorf("invalid call order for spec A: %v", objB.c)
+	}
+}
+
+func findSpec(objs []*testObject, name string) *testObject {
+	for _, obj := range objs {
+		for _, specName := range obj.c {
+			if name == specName {
+				return obj
+			}
+		}
+	}
+	return nil
+}
+
+type testObject struct {
+	c    []string
+	done bool
+}
+
+func NewTestObject() *testObject {
+	return &testObject{
+		c: make([]string, 0),
+	}
+}
+
+func (t *testObject) Use(i string) {
+	t.c = append(t.c, i)
+}
+
+func (t *testObject) Close() {
+	if t.done {
+		panic("close() called too many times")
+	}
+	t.done = true
 }
