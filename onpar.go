@@ -122,13 +122,12 @@ func invokeAfterEach(tt *testing.T, l *level, levelArgs map[*level][]reflect.Val
 }
 
 func buildDesc(l *level, i specInfo) string {
-	var desc string
-	traverse(current, func(ll *level) bool {
-		desc = fmt.Sprintf("%s/%s", desc, ll.name)
-		return ll != l
+	desc := i.name
+	rTraverse(l, func(ll *level) {
+		desc = fmt.Sprintf("%s/%s", ll.name, desc)
 	})
 
-	return fmt.Sprintf("%s/%s", desc, i.name)
+	return desc
 }
 
 func traverse(l *level, f func(*level) bool) {
