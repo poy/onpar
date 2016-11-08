@@ -5,15 +5,17 @@ Parallel testing framework for Go
 Test assertions are done within a `Spec()` function. Each `Spec` has a name and a function. The function takes a `testing.T` as an argument and any output from a `BeforeEach()`. Each `Spec` is run in parallel (`t.Parallel()` is invoked for each spec before calling the given function).
 
 ```golang
-BeforeEach(func(t *testing.T) (a int, b float64) {
+o := onpar.New()
+
+o.BeforeEach(func(t *testing.T) (a int, b float64) {
     return 99, 101.0
 })
 
-AfterEach(func(t *testing.T, a int, b float64) {
+o.AfterEach(func(t *testing.T, a int, b float64) {
         // ...
 })
 
-Spec("something informative", func(t *testing.T, a int, b float64) {
+o.Spec("something informative", func(t *testing.T, a int, b float64) {
     if a != 99 {
         t.Errorf("%d != 99", a)
     }
@@ -25,20 +27,22 @@ Spec("something informative", func(t *testing.T, a int, b float64) {
 
 
 ```golang
-BeforeEach(func(t *testing.T) (a int, b float64) {
+o := onpar.New()
+
+o.BeforeEach(func(t *testing.T) (a int, b float64) {
     return 99, 101.0
 })
 
-Group("some-group", func() {
-    BeforeEach(func(t *teting.T, a int, b float64) (s string) {
+o.Group("some-group", func() {
+    o.BeforeEach(func(t *teting.T, a int, b float64) (s string) {
         return "foo"
     })
 
-    AfterEach(func(t *teting.T, a int, b float64, s string) {
+    o.AfterEach(func(t *teting.T, a int, b float64, s string) {
         // ...
     })
     
-    Spec("something informative", func(t *testing.T, a int, b float64, s string) {
+    o.Spec("something informative", func(t *testing.T, a int, b float64, s string) {
         // ...
     })
 })

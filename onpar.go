@@ -6,72 +6,78 @@ import (
 	"testing"
 )
 
+// Stores the state of the specs and groups
+type Onpar struct {
+	current *level
+}
+
+// Creates a new Onpar test suite
+func New() *Onpar {
+	return &Onpar{
+		current: new(level),
+	}
+}
+
 // Spec is a test that runs in parallel with other specs. The provided function
 // takes the `testing.T` for test assertions and any arguments the `BeforeEach()`
 // returns.
-func Spec(name string, f interface{}) {
+func (o *Onpar) Spec(name string, f interface{}) {
 	v := reflect.ValueOf(f)
 	spec := specInfo{
 		name: name,
 		f:    &v,
 	}
-	current.specs = append(current.specs, spec)
+	o.current.specs = append(o.current.specs, spec)
 }
 
 // Group is used to gather and categorize specs. Each group can have a single
 // `BeforeEach()` and `AfterEach()`.
-func Group(name string, f func()) {
+func (o *Onpar) Group(name string, f func()) {
 	newLevel := &level{
 		name:   name,
-		parent: current,
+		parent: o.current,
 	}
 
-	current.children = append(current.children, newLevel)
+	o.current.children = append(o.current.children, newLevel)
 
-	oldLevel := current
-	current = newLevel
+	oldLevel := o.current
+	o.current = newLevel
 	f()
-	current = oldLevel
+	o.current = oldLevel
 }
 
 // BeforeEach is used for any setup that may be required for the specs.
 // Each argument returned will be required to be received by following specs.
 // Outer BeforeEaches are invoked before inner ones.
-func BeforeEach(f interface{}) {
-	if current.before != nil {
-		panic(fmt.Sprintf("Level '%s' already has a registered BeforeEach", current.name))
+func (o *Onpar) BeforeEach(f interface{}) {
+	if o.current.before != nil {
+		panic(fmt.Sprintf("Level '%s' already has a registered BeforeEach", o.current.name))
 	}
 
 	v := reflect.ValueOf(f)
-	current.before = &v
+	o.current.before = &v
 }
 
 // AfterEach is used to cleanup anything from the specs or BeforeEaches.
 // The function takes arguments the same as specs. Inner AfterEaches are invoked
 // before outer ones.
-func AfterEach(f interface{}) {
-	if current.after != nil {
-		panic(fmt.Sprintf("Level '%s' already has a registered AfterEach", current.name))
+func (o *Onpar) AfterEach(f interface{}) {
+	if o.current.after != nil {
+		panic(fmt.Sprintf("Level '%s' already has a registered AfterEach", o.current.name))
 	}
 
 	v := reflect.ValueOf(f)
-	current.after = &v
+	o.current.after = &v
 }
 
 // Run is used to initiate the tests.
-func Run(t *testing.T) {
-
-	traverse(current, func(l *level) bool {
+func (o *Onpar) Run(t *testing.T) {
+	traverse(o.current, func(l *level) {
 		for _, spec := range l.specs {
 			spec.invoke(t, l)
 		}
-		return true
 	})
 }
-
-var (
-	current *level = new(level)
-)
 
 type level struct {
 	before, after *reflect.Value
@@ -155,14 +161,12 @@ func buildDesc(l *level, i specInfo) string {
 	return desc
 }
 
-func traverse(l *level, f func(*level) bool) {
+func traverse(l *level, f func(*level)) {
 	if l == nil {
 		return
 	}
 
-	if !f(l) {
-		return
-	}
+	f(l)
 
 	for _, child := range l.children {
 		traverse(child, f)

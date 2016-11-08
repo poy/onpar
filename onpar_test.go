@@ -11,12 +11,13 @@ import (
 func TestOrder(t *testing.T) {
 	var lock sync.Mutex
 	var objs []*testObject
+	o := onpar.New()
 
-	onpar.AfterEach(func(t *testing.T) {
+	o.AfterEach(func(t *testing.T) {
 	})
 
-	onpar.Group("DA", func() {
-		onpar.BeforeEach(func(t *testing.T) (int, string, *testObject) {
+	o.Group("DA", func() {
+		o.BeforeEach(func(t *testing.T) (int, string, *testObject) {
 			obj := NewTestObject()
 			obj.Use("DA-BeforeEach")
 
@@ -27,7 +28,7 @@ func TestOrder(t *testing.T) {
 			return 99, "something", obj
 		})
 
-		onpar.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
+		o.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
 			if i != 99 {
 				t.Fatalf("expected %d = %d", i, 99)
 			}
@@ -40,7 +41,7 @@ func TestOrder(t *testing.T) {
 			o.Close()
 		})
 
-		onpar.Spec("A", func(t *testing.T, i int, s string, o *testObject) {
+		o.Spec("A", func(t *testing.T, i int, s string, o *testObject) {
 			if i != 99 {
 				t.Fatalf("expected %d = %d", i, 99)
 			}
@@ -52,17 +53,17 @@ func TestOrder(t *testing.T) {
 			o.Use("DA-A")
 		})
 
-		onpar.Group("DB", func() {
-			onpar.BeforeEach(func(t *testing.T, i int, s string, o *testObject) float64 {
+		o.Group("DB", func() {
+			o.BeforeEach(func(t *testing.T, i int, s string, o *testObject) float64 {
 				o.Use("DB-BeforeEach")
 				return 101
 			})
 
-			onpar.AfterEach(func(t *testing.T, i int, s string, o *testObject, f float64) {
+			o.AfterEach(func(t *testing.T, i int, s string, o *testObject, f float64) {
 				o.Use("DB-AfterEach")
 			})
 
-			onpar.Spec("B", func(t *testing.T, i int, s string, o *testObject, f float64) {
+			o.Spec("B", func(t *testing.T, i int, s string, o *testObject, f float64) {
 				o.Use("DB-B")
 				if i != 99 {
 					t.Fatalf("expected %d = %d", i, 99)
@@ -77,7 +78,7 @@ func TestOrder(t *testing.T) {
 				}
 			})
 
-			onpar.Spec("C", func(t *testing.T, i int, s string, o *testObject, f float64) {
+			o.Spec("C", func(t *testing.T, i int, s string, o *testObject, f float64) {
 				o.Use("DB-C")
 				if i != 99 {
 					t.Fatalf("expected %d = %d", i, 99)
@@ -93,15 +94,15 @@ func TestOrder(t *testing.T) {
 			})
 		})
 
-		onpar.Group("DC", func() {
-			onpar.BeforeEach(func(t *testing.T, i int, s string, o *testObject) {
+		o.Group("DC", func() {
+			o.BeforeEach(func(t *testing.T, i int, s string, o *testObject) {
 				o.Use("DC-BeforeEach")
 			})
 		})
 	})
 
 	t.Run("", func(tt *testing.T) {
-		onpar.Run(tt)
+		o.Run(tt)
 	})
 
 	if len(objs) != 3 {
