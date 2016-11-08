@@ -92,6 +92,12 @@ func TestOrder(t *testing.T) {
 				}
 			})
 		})
+
+		onpar.Group("DC", func() {
+			onpar.BeforeEach(func(t *testing.T, i int, s string, o *testObject) {
+				o.Use("DC-BeforeEach")
+			})
+		})
 	})
 
 	t.Run("", func(tt *testing.T) {
@@ -139,6 +145,11 @@ func TestOrder(t *testing.T) {
 
 	if !reflect.DeepEqual(objC.c, []string{"DA-BeforeEach", "DB-BeforeEach", "DB-C", "DB-AfterEach", "DA-AfterEach"}) {
 		t.Fatalf("invalid call order for spec A: %v", objC.c)
+	}
+
+	objCBeforeEach := findSpec(objs, "DC-BeforeEach")
+	if objCBeforeEach != nil {
+		t.Fatal("should not have invoked before each")
 	}
 }
 

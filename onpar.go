@@ -107,14 +107,27 @@ func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]re
 	}
 	levelArgs := make(map[*level][]reflect.Value)
 
-	traverse(current, func(ll *level) bool {
-		if ll.before != nil {
-			args = append(args, ll.before.Call(args)...)
-			levelArgs[ll] = args
-		}
+	type beforeEachInfo struct {
+		f *reflect.Value
+		l *level
+	}
+	var beforeEaches []beforeEachInfo
 
-		return ll != l
+	rTraverse(l, func(ll *level) {
+		if ll.before != nil {
+			beforeEaches = append(beforeEaches, beforeEachInfo{
+				f: ll.before,
+				l: ll,
+			})
+		}
 	})
+
+	for i := len(beforeEaches) - 1; i >= 0; i-- {
+		be := beforeEaches[i]
+		args = append(args, be.f.Call(args)...)
+		levelArgs[be.l] = args
+	}
+
 	return args, levelArgs
 }
 
