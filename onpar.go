@@ -3,18 +3,25 @@ package onpar
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 	"testing"
 )
 
 // Stores the state of the specs and groups
 type Onpar struct {
-	current *level
+	current   *level
+	callCount int
 }
 
 // Creates a new Onpar test suite
 func New() *Onpar {
+	return NewWithCallCount(1)
+}
+
+func NewWithCallCount(count int) *Onpar {
 	return &Onpar{
-		current: new(level),
+		current:   new(level),
+		callCount: count,
 	}
 }
 
@@ -22,10 +29,14 @@ func New() *Onpar {
 // takes the `testing.T` for test assertions and any arguments the `BeforeEach()`
 // returns.
 func (o *Onpar) Spec(name string, f interface{}) {
+	_, fileName, lineNumber, _ := runtime.Caller(o.callCount)
 	v := reflect.ValueOf(f)
 	spec := specInfo{
-		name: name,
-		f:    &v,
+		name:       name,
+		f:          &v,
+		ft:         reflect.TypeOf(f),
+		fileName:   fileName,
+		lineNumber: lineNumber,
 	}
 	o.current.specs = append(o.current.specs, spec)
 }
@@ -53,9 +64,15 @@ func (o *Onpar) BeforeEach(f interface{}) {
 	if o.current.before != nil {
 		panic(fmt.Sprintf("Level '%s' already has a registered BeforeEach", o.current.name))
 	}
+	_, fileName, lineNumber, _ := runtime.Caller(o.callCount)
 
 	v := reflect.ValueOf(f)
-	o.current.before = &v
+	o.current.before = &specInfo{
+		f:          &v,
+		ft:         reflect.TypeOf(f),
+		fileName:   fileName,
+		lineNumber: lineNumber,
+	}
 }
 
 // AfterEach is used to cleanup anything from the specs or BeforeEaches.
@@ -66,8 +83,15 @@ func (o *Onpar) AfterEach(f interface{}) {
 		panic(fmt.Sprintf("Level '%s' already has a registered AfterEach", o.current.name))
 	}
 
+	_, fileName, lineNumber, _ := runtime.Caller(o.callCount)
+
 	v := reflect.ValueOf(f)
-	o.current.after = &v
+	o.current.after = &specInfo{
+		f:          &v,
+		ft:         reflect.TypeOf(f),
+		fileName:   fileName,
+		lineNumber: lineNumber,
+	}
 }
 
 // Run is used to initiate the tests.
@@ -80,7 +104,7 @@ func (o *Onpar) Run(t *testing.T) {
 }
 
 type level struct {
-	before, after *reflect.Value
+	before, after *specInfo
 	name          string
 	specs         []specInfo
 
@@ -93,6 +117,10 @@ type level struct {
 type specInfo struct {
 	name string
 	f    *reflect.Value
+	ft   reflect.Type
+
+	fileName   string
+	lineNumber int
 }
 
 func (s specInfo) invoke(t *testing.T, l *level) {
@@ -101,10 +129,39 @@ func (s specInfo) invoke(t *testing.T, l *level) {
 		tt.Parallel()
 
 		args, levelArgs := invokeBeforeEach(tt, l)
+
+		verifySpecCall(s, args)
+
 		s.f.Call(args)
 
 		invokeAfterEach(tt, l, levelArgs)
 	})
+}
+
+func verifySpecCall(s specInfo, args []reflect.Value) {
+	if s.ft.NumOut() != 0 {
+		panic("Spec functions must not return anything")
+	}
+
+	verifyCall("Spec", s, args)
+}
+
+func verifyCall(name string, s specInfo, args []reflect.Value) {
+	if s.ft.NumIn() != len(args) {
+		argStr := buildReadableArgs(args)
+		panic(
+			fmt.Sprintf("Expected %s func (%s:%d) to take arguments: %v",
+				name, s.fileName, s.lineNumber, argStr),
+		)
+	}
+}
+
+func buildReadableArgs(args []reflect.Value) string {
+	var result string
+	for _, arg := range args {
+		result = fmt.Sprintf("%s, %s", result, arg.Type().String())
+	}
+	return result[1:]
 }
 
 func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]reflect.Value) {
@@ -114,7 +171,7 @@ func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]re
 	levelArgs := make(map[*level][]reflect.Value)
 
 	type beforeEachInfo struct {
-		f *reflect.Value
+		s *specInfo
 		l *level
 	}
 	var beforeEaches []beforeEachInfo
@@ -122,7 +179,7 @@ func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]re
 	rTraverse(l, func(ll *level) {
 		if ll.before != nil {
 			beforeEaches = append(beforeEaches, beforeEachInfo{
-				f: ll.before,
+				s: ll.before,
 				l: ll,
 			})
 		}
@@ -130,7 +187,10 @@ func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]re
 
 	for i := len(beforeEaches) - 1; i >= 0; i-- {
 		be := beforeEaches[i]
-		args = append(args, be.f.Call(args)...)
+
+		verifyCall("BeforeEach", *be.s, args)
+
+		args = append(args, be.s.f.Call(args)...)
 		levelArgs[be.l] = args
 	}
 
@@ -147,7 +207,8 @@ func invokeAfterEach(tt *testing.T, l *level, levelArgs map[*level][]reflect.Val
 		}
 
 		if ll.after != nil {
-			ll.after.Call(beforeEachArgs)
+			verifyCall("AfterEach", *ll.after, beforeEachArgs)
+			ll.after.f.Call(beforeEachArgs)
 		}
 	})
 }
