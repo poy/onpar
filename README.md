@@ -115,3 +115,6 @@ o.Group("DA", func() {
 
 ### Avoiding Closure
 Why bother with returning values from a `BeforeEach`? To avoid closure of course! When running `Spec`s in parallel (which they always do), each variable needs a new instance to avoid race conditions. If you use closure, then this gets tough. So onpar will pass the arguments to the given function.
+
+### Extending onpar
+onpar strives to be simple. Some projects may require/prefer an alternative verbage. For an example of this check out [onpar-ginkgo](https://github.com/apoydence/onpar-ginkgo).
