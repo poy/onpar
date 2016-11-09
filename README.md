@@ -49,7 +49,7 @@ o.Group("some-group", func() {
 ```
 
 ### Run Order
-Each `BeforeEach()` runs before any `Spec` in the same `Group`. It will also before any sub-group `Spec`s and their `BeforeEach`es. Any `AfterEach()` will run after the `Spec` and before parent `AfterEach`es.
+Each `BeforeEach()` runs before any `Spec` in the same `Group`. It will also run before any sub-group `Spec`s and their `BeforeEach`es. Any `AfterEach()` will run after the `Spec` and before parent `AfterEach`es.
 
 ``` golang
 
