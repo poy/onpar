@@ -192,10 +192,12 @@ func createScaffolding() (*onpar.Onpar, <-chan *testObject) {
 		o.Group("DC", func() {
 			o.BeforeEach(func(t *testing.T, i int, s string, o *testObject) {
 				o.Use("DC-BeforeEach")
+				t.Fatalf("should not have been invoked")
 			})
 
 			o.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
 				o.Use("DC-AfterEach")
+				t.Fatalf("should not have been invoked")
 			})
 		})
 	})
