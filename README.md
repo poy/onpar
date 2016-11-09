@@ -51,5 +51,67 @@ o.Group("some-group", func() {
 ### Run Order
 Each `BeforeEach()` runs before any `Spec` in the same `Group`. It will also before any sub-group `Spec`s and their `BeforeEach`es. Any `AfterEach()` will run after the `Spec` and before parent `AfterEach`es.
 
+``` golang
+
+o := onpar.New()
+
+o.BeforeEach(func(t *testing.T) (int, string) {
+    // Spec "A": Order = 1
+    // Spec "B": Order = 1
+    // Spec "C": Order = 1
+    return 99, "foo"
+})
+
+o.AfterEach(func(t *testing.T, i int, s string) {
+    // Spec "A": Order = 4
+    // Spec "B": Order = 6
+    // Spec "C": Order = 6
+})
+
+o.Group("DA", func() {
+    o.AfterEach(func(t *testing.T, i int, s string) {
+        // Spec "A": Order = 3
+        // Spec "B": Order = 5
+        // Spec "C": Order = 5
+    })
+
+    o.Spec("A", func(t *testing.T, i int, s string) {
+        // Spec "A": Order = 2
+    })
+
+    o.Group("DB", func() {
+        o.BeforeEach(func(t *testing.T, i int, s string) float64 {
+            // Spec "B": Order = 2
+            // Spec "C": Order = 2
+            return 101
+        })
+
+        o.AfterEach(func(t *testing.T, i int, s string, f float64) {
+            // Spec "B": Order = 4
+            // Spec "C": Order = 4
+        })
+
+        o.Spec("B", func(t *testing.T, i int, s string, f float64) {
+            // Spec "B": Order = 3
+        })
+
+        o.Spec("C", func(t *testing.T, i int, s string, f float64) {
+            // Spec "C": Order = 3
+        })
+    })
+
+    o.Group("DC", func() {
+        o.BeforeEach(func(t *testing.T, i int, s string) {
+            // Will not be invoked
+        })
+
+        o.AfterEach(func(t *testing.T, i int, s string) {
+            // Will not be invoked
+        })
+    })
+})
+
+```
+
 ### Avoiding Closure
 Why bother with returning values from a `BeforeEach`? To avoid closure of course! When running `Spec`s in parallel (which they always do), each variable needs a new instance to avoid race conditions. If you use closure, then this gets tough. So onpar will pass the arguments to the given function.
