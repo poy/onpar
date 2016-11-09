@@ -147,12 +147,22 @@ func verifySpecCall(s specInfo, args []reflect.Value) {
 }
 
 func verifyCall(name string, s specInfo, args []reflect.Value) {
+	argStr := buildReadableArgs(args)
+
 	if s.ft.NumIn() != len(args) {
-		argStr := buildReadableArgs(args)
 		panic(
-			fmt.Sprintf("Expected %s func (%s:%d) to take arguments: %v",
-				name, s.fileName, s.lineNumber, argStr),
+			fmt.Sprintf("Invalid number of args (%d): expected %s func (%s:%d) to take arguments: %v",
+				s.ft.NumIn(), name, s.fileName, s.lineNumber, argStr),
 		)
+	}
+
+	for i := 0; i < s.ft.NumIn(); i++ {
+		if s.ft.In(i) != args[i].Type() {
+			panic(
+				fmt.Sprintf("Invaid arg type (%s): expected %s func (%s:%d) to take arguments: %v",
+					s.ft.In(i).String(), name, s.fileName, s.lineNumber, argStr),
+			)
+		}
 	}
 }
 
@@ -177,20 +187,20 @@ func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]re
 	var beforeEaches []beforeEachInfo
 
 	rTraverse(l, func(ll *level) {
-		if ll.before != nil {
-			beforeEaches = append(beforeEaches, beforeEachInfo{
-				s: ll.before,
-				l: ll,
-			})
-		}
+		beforeEaches = append(beforeEaches, beforeEachInfo{
+			s: ll.before,
+			l: ll,
+		})
 	})
 
 	for i := len(beforeEaches) - 1; i >= 0; i-- {
 		be := beforeEaches[i]
 
-		verifyCall("BeforeEach", *be.s, args)
+		if be.s != nil {
+			verifyCall("BeforeEach", *be.s, args)
+			args = append(args, be.s.f.Call(args)...)
+		}
 
-		args = append(args, be.s.f.Call(args)...)
 		levelArgs[be.l] = args
 	}
 

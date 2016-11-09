@@ -2,32 +2,127 @@ package onpar_test
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/apoydence/onpar"
 )
 
-func TestOrder(t *testing.T) {
-	var lock sync.Mutex
-	var objs []*testObject
-	o := onpar.New()
+func TestSingleNestedSpec(t *testing.T) {
+	o, c := createScaffolding()
 
-	o.AfterEach(func(t *testing.T) {
+	t.Run("FakeSpecs", func(tt *testing.T) {
+		o.Run(tt)
+	})
+	objs := chanToSlice(c)
+
+	if len(objs) != 3 {
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objs), 3)
+	}
+
+	objA := findSpec(objs, "DA-A")
+	if objA == nil {
+		t.Fatal("unable to find spec A")
+	}
+
+	if len(objA.c) != 4 {
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objA.c), 4)
+	}
+
+	if !reflect.DeepEqual(objA.c, []string{"-BeforeEach", "DA-A", "DA-AfterEach", "-AfterEach"}) {
+		t.Fatalf("invalid call order for spec A: %v", objA.c)
+	}
+}
+
+func TestInvokeFirstChildAndPeerSpec(t *testing.T) {
+	o, c := createScaffolding()
+
+	t.Run("FakeSpecs", func(tt *testing.T) {
+		o.Run(tt)
+	})
+	objs := chanToSlice(c)
+
+	objB := findSpec(objs, "DB-B")
+	if objB == nil {
+		t.Fatal("unable to find spec B")
+	}
+
+	if len(objB.c) != 6 {
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objB.c), 6)
+	}
+
+	if !reflect.DeepEqual(objB.c, []string{"-BeforeEach", "DB-BeforeEach", "DB-B", "DB-AfterEach", "DA-AfterEach", "-AfterEach"}) {
+		t.Fatalf("invalid call order for spec A: %v", objB.c)
+	}
+}
+
+func TestInvokeSecondChildAndPeerSpec(t *testing.T) {
+	o, c := createScaffolding()
+
+	t.Run("FakeSpecs", func(tt *testing.T) {
+		o.Run(tt)
+	})
+	objs := chanToSlice(c)
+
+	objC := findSpec(objs, "DB-C")
+	if objC == nil {
+		t.Fatal("unable to find spec C")
+	}
+
+	if len(objC.c) != 6 {
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objC.c), 6)
+	}
+
+	if !reflect.DeepEqual(objC.c, []string{"-BeforeEach", "DB-BeforeEach", "DB-C", "DB-AfterEach", "DA-AfterEach", "-AfterEach"}) {
+		t.Fatalf("invalid call order for spec A: %v", objC.c)
+	}
+}
+
+func TestDoNotInvokeStrandedBeforeEach(t *testing.T) {
+	o, c := createScaffolding()
+
+	t.Run("FakeSpecs", func(tt *testing.T) {
+		o.Run(tt)
+	})
+	objs := chanToSlice(c)
+
+	objCBeforeEach := findSpec(objs, "DC-BeforeEach")
+	if objCBeforeEach != nil {
+		t.Fatal("should not have invoked BeforeEach")
+	}
+}
+
+func TestDoNotInvokeStrandedAfterEach(t *testing.T) {
+	o, c := createScaffolding()
+
+	t.Run("FakeSpecs", func(tt *testing.T) {
+		o.Run(tt)
+	})
+	objs := chanToSlice(c)
+
+	objCBeforeEach := findSpec(objs, "DC-AfterEach")
+	if objCBeforeEach != nil {
+		t.Fatal("should not have invoked AfterEach")
+	}
+}
+
+func createScaffolding() (*onpar.Onpar, <-chan *testObject) {
+	o := onpar.New()
+	objs := make(chan *testObject, 100)
+
+	o.BeforeEach(func(t *testing.T) (int, string, *testObject) {
+		obj := NewTestObject()
+		obj.Use("-BeforeEach")
+
+		objs <- obj
+
+		return 99, "something", obj
+	})
+
+	o.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
+		o.Use("-AfterEach")
 	})
 
 	o.Group("DA", func() {
-		o.BeforeEach(func(t *testing.T) (int, string, *testObject) {
-			obj := NewTestObject()
-			obj.Use("DA-BeforeEach")
-
-			lock.Lock()
-			objs = append(objs, obj)
-			lock.Unlock()
-
-			return 99, "something", obj
-		})
-
 		o.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
 			if i != 99 {
 				t.Fatalf("expected %d = %d", i, 99)
@@ -98,60 +193,23 @@ func TestOrder(t *testing.T) {
 			o.BeforeEach(func(t *testing.T, i int, s string, o *testObject) {
 				o.Use("DC-BeforeEach")
 			})
+
+			o.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
+				o.Use("DC-AfterEach")
+			})
 		})
 	})
 
-	t.Run("", func(tt *testing.T) {
-		o.Run(tt)
-	})
+	return o, objs
+}
 
-	if len(objs) != 3 {
-		t.Fatalf("expected objs (len=%d) to have len %d", len(objs), 3)
+func chanToSlice(c <-chan *testObject) []*testObject {
+	var results []*testObject
+	l := len(c)
+	for i := 0; i < l; i++ {
+		results = append(results, <-c)
 	}
-
-	objA := findSpec(objs, "DA-A")
-	if objA == nil {
-		t.Fatal("unable to find spec A")
-	}
-
-	if len(objA.c) != 3 {
-		t.Fatalf("expected objs (len=%d) to have len %d", len(objA.c), 3)
-	}
-
-	if !reflect.DeepEqual(objA.c, []string{"DA-BeforeEach", "DA-A", "DA-AfterEach"}) {
-		t.Fatalf("invalid call order for spec A: %v", objA.c)
-	}
-
-	objB := findSpec(objs, "DB-B")
-	if objB == nil {
-		t.Fatal("unable to find spec B")
-	}
-
-	if len(objB.c) != 5 {
-		t.Fatalf("expected objs (len=%d) to have len %d", len(objB.c), 5)
-	}
-
-	if !reflect.DeepEqual(objB.c, []string{"DA-BeforeEach", "DB-BeforeEach", "DB-B", "DB-AfterEach", "DA-AfterEach"}) {
-		t.Fatalf("invalid call order for spec A: %v", objB.c)
-	}
-
-	objC := findSpec(objs, "DB-C")
-	if objC == nil {
-		t.Fatal("unable to find spec C")
-	}
-
-	if len(objC.c) != 5 {
-		t.Fatalf("expected objs (len=%d) to have len %d", len(objC.c), 5)
-	}
-
-	if !reflect.DeepEqual(objC.c, []string{"DA-BeforeEach", "DB-BeforeEach", "DB-C", "DB-AfterEach", "DA-AfterEach"}) {
-		t.Fatalf("invalid call order for spec A: %v", objC.c)
-	}
-
-	objCBeforeEach := findSpec(objs, "DC-BeforeEach")
-	if objCBeforeEach != nil {
-		t.Fatal("should not have invoked before each")
-	}
+	return results
 }
 
 func findSpec(objs []*testObject, name string) *testObject {
