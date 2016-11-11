@@ -4,7 +4,7 @@ Parallel testing framework for Go
 ### Specs
 Test assertions are done within a `Spec()` function. Each `Spec` has a name and a function. The function takes a `testing.T` as an argument and any output from a `BeforeEach()`. Each `Spec` is run in parallel (`t.Parallel()` is invoked for each spec before calling the given function).
 
-```golang
+```go
 o := onpar.New()
 
 o.BeforeEach(func(t *testing.T) (a int, b float64) {
@@ -26,7 +26,7 @@ o.Spec("something informative", func(t *testing.T, a int, b float64) {
 `Group`s are used to keep `Spec`s in logical place. The intention is to gather each `Spec` in a reasonable place. Each `Group` can have a `BeforeEach()` and a `AfterEach()` but are not required to.
 
 
-```golang
+```go
 o := onpar.New()
 
 o.BeforeEach(func(t *testing.T) (a int, b float64) {
@@ -51,7 +51,7 @@ o.Group("some-group", func() {
 ### Run Order
 Each `BeforeEach()` runs before any `Spec` in the same `Group`. It will also run before any sub-group `Spec`s and their `BeforeEach`es. Any `AfterEach()` will run after the `Spec` and before parent `AfterEach`es.
 
-``` golang
+``` go
 
 o := onpar.New()
 
