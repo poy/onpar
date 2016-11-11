@@ -8,6 +8,7 @@ import (
 )
 
 func TestSingleNestedSpec(t *testing.T) {
+	t.Parallel()
 	o, c := createScaffolding()
 
 	t.Run("FakeSpecs", func(tt *testing.T) {
@@ -34,6 +35,7 @@ func TestSingleNestedSpec(t *testing.T) {
 }
 
 func TestInvokeFirstChildAndPeerSpec(t *testing.T) {
+	t.Parallel()
 	o, c := createScaffolding()
 
 	t.Run("FakeSpecs", func(tt *testing.T) {
@@ -56,6 +58,7 @@ func TestInvokeFirstChildAndPeerSpec(t *testing.T) {
 }
 
 func TestInvokeSecondChildAndPeerSpec(t *testing.T) {
+	t.Parallel()
 	o, c := createScaffolding()
 
 	t.Run("FakeSpecs", func(tt *testing.T) {
@@ -78,6 +81,7 @@ func TestInvokeSecondChildAndPeerSpec(t *testing.T) {
 }
 
 func TestDoNotInvokeStrandedBeforeEach(t *testing.T) {
+	t.Parallel()
 	o, c := createScaffolding()
 
 	t.Run("FakeSpecs", func(tt *testing.T) {
@@ -92,6 +96,7 @@ func TestDoNotInvokeStrandedBeforeEach(t *testing.T) {
 }
 
 func TestDoNotInvokeStrandedAfterEach(t *testing.T) {
+	t.Parallel()
 	o, c := createScaffolding()
 
 	t.Run("FakeSpecs", func(tt *testing.T) {
