@@ -1,4 +1,6 @@
 # onpar
+
+[![Join the chat at https://gitter.im/apoydence/onpar](https://badges.gitter.im/apoydence/onpar.svg)](https://gitter.im/apoydence/onpar?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Parallel testing framework for Go
 
 ### Specs
