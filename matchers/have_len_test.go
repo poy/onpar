@@ -1,6 +1,7 @@
 package matchers_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/apoydence/onpar/matchers"
@@ -14,9 +15,14 @@ func TestLen(t *testing.T) {
 		t.Error("expected err to not be nil")
 	}
 
-	_, err = m.Match([]int{1, 2, 3, 4, 5})
+	x := []int{1, 2, 3, 4, 5}
+	v, err := m.Match(x)
 	if err != nil {
 		t.Error("expected err to be nil")
+	}
+
+	if !reflect.DeepEqual(v, x) {
+		t.Errorf("expected %v to equal %v", v, x)
 	}
 
 	_, err = m.Match(make(chan int, 3))

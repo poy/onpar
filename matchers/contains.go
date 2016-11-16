@@ -25,5 +25,5 @@ func (m ContainsMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%s does not contain %s", s, m.substr)
 	}
 
-	return nil, nil
+	return actual, nil
 }

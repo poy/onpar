@@ -25,5 +25,5 @@ func (m EndsWithMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%s does not end with %s", s, m.suffix)
 	}
 
-	return nil, nil
+	return actual, nil
 }

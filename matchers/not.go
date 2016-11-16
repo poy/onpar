@@ -18,10 +18,10 @@ func Not(child Matcher) NotMatcher {
 }
 
 func (m NotMatcher) Match(actual interface{}) (interface{}, error) {
-	_, err := m.child.Match(actual)
+	v, err := m.child.Match(actual)
 	if err == nil {
 		return nil, fmt.Errorf("match %#v", m.child)
 	}
 
-	return nil, nil
+	return v, nil
 }

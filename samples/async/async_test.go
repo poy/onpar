@@ -17,5 +17,5 @@ func TestChannel(t *testing.T) {
 
 	Expect(t, c).To(ViaPolling(
 		Chain(Receive(), Equal(50)),
-	))
+	)).AndForThat.To(Not(Equal(101)))
 }

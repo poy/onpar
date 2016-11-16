@@ -22,5 +22,5 @@ func (m BeAboveMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%f is not above %f", actual, m.expected)
 	}
 
-	return nil, nil
+	return actual, nil
 }

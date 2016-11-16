@@ -28,5 +28,5 @@ func (m HaveCapMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%v (cap=%d) does not have a capacity f %d", actual, c, m.expected)
 	}
 
-	return nil, nil
+	return actual, nil
 }

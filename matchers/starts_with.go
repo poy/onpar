@@ -25,5 +25,5 @@ func (m StartsWithMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%s does not start with %s", s, m.prefix)
 	}
 
-	return nil, nil
+	return actual, nil
 }

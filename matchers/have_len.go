@@ -28,5 +28,5 @@ func (m HaveLenMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%v (len=%d) does not have a length of %d", actual, l, m.expected)
 	}
 
-	return nil, nil
+	return actual, nil
 }

@@ -20,5 +20,5 @@ func (m EqualMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%v to equal %v", actual, m.expected)
 	}
 
-	return nil, nil
+	return actual, nil
 }

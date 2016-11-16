@@ -34,8 +34,12 @@ func TestNot(t *testing.T) {
 	mockMatcher.MatchOutput.ResultValue <- 103
 	mockMatcher.MatchOutput.Err <- fmt.Errorf("some-error")
 
-	_, err = m.Match(101)
+	v, err := m.Match(101)
 	if err != nil {
 		t.Error("expected err to be nil")
+	}
+
+	if !reflect.DeepEqual(v, 103) {
+		t.Errorf("expected %v to equal %v", v, 103)
 	}
 }

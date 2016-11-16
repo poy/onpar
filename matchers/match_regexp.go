@@ -30,5 +30,5 @@ func (m MatchRegexpMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%s does not match pattern %s", s, m.pattern)
 	}
 
-	return nil, nil
+	return actual, nil
 }
