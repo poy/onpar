@@ -5,17 +5,17 @@ import (
 	"reflect"
 )
 
-type CapMatcher struct {
+type HaveCapMatcher struct {
 	expected int
 }
 
-func Cap(expected int) CapMatcher {
-	return CapMatcher{
+func HaveCap(expected int) HaveCapMatcher {
+	return HaveCapMatcher{
 		expected: expected,
 	}
 }
 
-func (m CapMatcher) Match(actual interface{}) (interface{}, error) {
+func (m HaveCapMatcher) Match(actual interface{}) (interface{}, error) {
 	var c int
 	switch reflect.TypeOf(actual).Kind() {
 	case reflect.Slice, reflect.Array, reflect.Map, reflect.String, reflect.Chan:

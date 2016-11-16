@@ -2,17 +2,17 @@ package matchers
 
 import "fmt"
 
-type BelowMatcher struct {
+type BeBelowMatcher struct {
 	expected float64
 }
 
-func Below(expected float64) BelowMatcher {
-	return BelowMatcher{
+func BeBelow(expected float64) BeBelowMatcher {
+	return BeBelowMatcher{
 		expected: expected,
 	}
 }
 
-func (m BelowMatcher) Match(actual interface{}) (interface{}, error) {
+func (m BeBelowMatcher) Match(actual interface{}) (interface{}, error) {
 	f, ok := actual.(float64)
 	if !ok {
 		return nil, fmt.Errorf("%v (%T) is not a float64", actual, actual)

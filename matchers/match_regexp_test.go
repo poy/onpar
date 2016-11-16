@@ -9,7 +9,7 @@ import (
 func TestRegexp(t *testing.T) {
 	t.Parallel()
 
-	m := matchers.Regexp("^foo")
+	m := matchers.MatchRegexp("^foo")
 
 	_, err := m.Match("barfoo")
 	if err == nil {

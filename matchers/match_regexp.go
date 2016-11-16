@@ -5,17 +5,17 @@ import (
 	"regexp"
 )
 
-type RegexpMatcher struct {
+type MatchRegexpMatcher struct {
 	pattern string
 }
 
-func Regexp(pattern string) RegexpMatcher {
-	return RegexpMatcher{
+func MatchRegexp(pattern string) MatchRegexpMatcher {
+	return MatchRegexpMatcher{
 		pattern: pattern,
 	}
 }
 
-func (m RegexpMatcher) Match(actual interface{}) (interface{}, error) {
+func (m MatchRegexpMatcher) Match(actual interface{}) (interface{}, error) {
 	r, err := regexp.Compile(m.pattern)
 	if err != nil {
 		return nil, err

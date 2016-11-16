@@ -7,7 +7,7 @@ import (
 )
 
 func TestLen(t *testing.T) {
-	m := matchers.Len(5)
+	m := matchers.HaveLen(5)
 
 	_, err := m.Match([]int{1, 2, 3})
 	if err == nil {

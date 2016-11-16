@@ -5,17 +5,17 @@ import (
 	"reflect"
 )
 
-type LenMatcher struct {
+type HaveLenMatcher struct {
 	expected int
 }
 
-func Len(expected int) LenMatcher {
-	return LenMatcher{
+func HaveLen(expected int) HaveLenMatcher {
+	return HaveLenMatcher{
 		expected: expected,
 	}
 }
 
-func (m LenMatcher) Match(actual interface{}) (interface{}, error) {
+func (m HaveLenMatcher) Match(actual interface{}) (interface{}, error) {
 	var l int
 	switch reflect.TypeOf(actual).Kind() {
 	case reflect.Slice, reflect.Array, reflect.Map, reflect.String, reflect.Chan:

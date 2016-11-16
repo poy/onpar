@@ -35,7 +35,7 @@ func TestDifferentInputs(t *testing.T) {
 
 		o.Spec("it returns 55 for n=9", func(t *testing.T) {
 			result := fibonacci.Fibonacci(9)
-			Expect(t, result).To(Not(Equal(55)))
+			Expect(t, result).To(Equal(55))
 		})
 	})
 }

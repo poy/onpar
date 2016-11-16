@@ -7,7 +7,7 @@ import (
 )
 
 func TestCap(t *testing.T) {
-	m := matchers.Cap(5)
+	m := matchers.HaveCap(5)
 
 	_, err := m.Match(make([]int, 0, 3))
 	if err == nil {
