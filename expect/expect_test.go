@@ -37,67 +37,11 @@ func TestToErrorsIfMatcherFails(t *testing.T) {
 	Expect(mockT, 101).To(mockMatcher)
 
 	select {
-	case msg := <-mockT.ErrorfInput.Format:
-		if msg != "some-error" {
+	case msg := <-mockT.FatalInput.Arg0:
+		if !reflect.DeepEqual(msg, []interface{}{"some-error"}) {
 			t.Errorf("Expected %v to equal %v", msg, "some-error")
 		}
 	default:
-		t.Errorf("Expected Errorf() to be invoked")
-	}
-}
-
-func TestToReturnsChainedToOnSuccess(t *testing.T) {
-	mockT := newMockT()
-	mockMatcher := newMockMatcher()
-	close(mockMatcher.MatchOutput.ResultValue)
-	close(mockMatcher.MatchOutput.Err)
-
-	Expect(mockT, 101).To(mockMatcher).And.To(mockMatcher)
-
-	if len(mockMatcher.MatchInput.Actual) != 2 {
-		t.Fatal("Expected Match() to be invoked 2 times")
-	}
-
-	<-mockMatcher.MatchInput.Actual
-	actual := <-mockMatcher.MatchInput.Actual
-	if !reflect.DeepEqual(actual, 101) {
-		t.Errorf("Expected %v to equal %v", actual, 101)
-	}
-}
-
-func TestToDoesNotInvokeAndMatcherOnFailure(t *testing.T) {
-	mockT := newMockT()
-	mockMatcher := newMockMatcher()
-	close(mockMatcher.MatchOutput.ResultValue)
-	mockMatcher.MatchOutput.Err <- fmt.Errorf("some-error")
-
-	Expect(mockT, 101).To(mockMatcher).And.To(mockMatcher)
-
-	if len(mockMatcher.MatchInput.Actual) != 1 {
-		t.Fatal("Expected Match() to be invoked 1 time")
-	}
-}
-
-func TestPassesNewValuesAlong(t *testing.T) {
-	mockT := newMockT()
-	mockMatcher := newMockMatcher()
-	mockMatcher.MatchOutput.ResultValue <- 99
-	mockMatcher.MatchOutput.ResultValue <- 103
-	close(mockMatcher.MatchOutput.Err)
-
-	Expect(mockT, 101).To(mockMatcher).AndForThat.To(mockMatcher)
-
-	if len(mockMatcher.MatchInput.Actual) != 2 {
-		t.Fatal("Expected Match() to be invoked 2 times")
-	}
-
-	actual := <-mockMatcher.MatchInput.Actual
-	if !reflect.DeepEqual(actual, 101) {
-		t.Errorf("Expected %v to equal %v", actual, 101)
-	}
-
-	actual = <-mockMatcher.MatchInput.Actual
-	if !reflect.DeepEqual(actual, 99) {
-		t.Errorf("Expected %v to equal %v", actual, 99)
+		t.Errorf("Expected Fatal() to be invoked")
 	}
 }
