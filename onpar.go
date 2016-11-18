@@ -159,8 +159,8 @@ func verifyCall(name string, s specInfo, args []reflect.Value) {
 	for i := 0; i < s.ft.NumIn(); i++ {
 		if s.ft.In(i) != args[i].Type() {
 			panic(
-				fmt.Sprintf("Invaid arg type (%s): expected %s func (%s:%d) to take arguments: %v",
-					s.ft.In(i).String(), name, s.fileName, s.lineNumber, argStr),
+				fmt.Sprintf("Invaid arg type (%s is not %s): expected %s func (%s:%d) to take arguments: %v",
+					s.ft.In(i).String(), args[i].Type(), name, s.fileName, s.lineNumber, argStr),
 			)
 		}
 	}
@@ -198,7 +198,7 @@ func invokeBeforeEach(tt *testing.T, l *level) ([]reflect.Value, map[*level][]re
 
 		if be.s != nil {
 			verifyCall("BeforeEach", *be.s, args)
-			args = append(args, be.s.f.Call(args)...)
+			args = be.s.f.Call(args)
 		}
 
 		levelArgs[be.l] = args

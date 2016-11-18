@@ -8,8 +8,9 @@ Test assertions are done within a `Spec()` function. Each `Spec` has a name and 
 
 ```go
 o := onpar.New()
+defer o.Run(t)
 
-o.BeforeEach(func(t *testing.T) (a int, b float64) {
+o.BeforeEach(func(t *testing.T) (*testing.T, int, float64) {
     return 99, 101.0
 })
 
@@ -30,21 +31,22 @@ o.Spec("something informative", func(t *testing.T, a int, b float64) {
 
 ```go
 o := onpar.New()
+defer o.Run(t)
 
-o.BeforeEach(func(t *testing.T) (a int, b float64) {
+o.BeforeEach(func(t *testing.T) (*testing.T, int, float64) {
     return 99, 101.0
 })
 
 o.Group("some-group", func() {
-    o.BeforeEach(func(t *teting.T, a int, b float64) (s string) {
-        return "foo"
+    o.BeforeEach(func(t *teting.T, a int, b float64) (*testing.T, string) {
+        return t, "foo"
     })
 
-    o.AfterEach(func(t *teting.T, a int, b float64, s string) {
+    o.AfterEach(func(t *testing.T, s string) {
         // ...
     })
     
-    o.Spec("something informative", func(t *testing.T, a int, b float64, s string) {
+    o.Spec("something informative", func(t *testing.T, s string) {
         // ...
     })
 })
@@ -54,14 +56,14 @@ o.Group("some-group", func() {
 Each `BeforeEach()` runs before any `Spec` in the same `Group`. It will also run before any sub-group `Spec`s and their `BeforeEach`es. Any `AfterEach()` will run after the `Spec` and before parent `AfterEach`es.
 
 ``` go
-
 o := onpar.New()
+defer o.Run(t)
 
-o.BeforeEach(func(t *testing.T) (int, string) {
+o.BeforeEach(func(t *testing.T) (*testing.T, int, string) {
     // Spec "A": Order = 1
     // Spec "B": Order = 1
     // Spec "C": Order = 1
-    return 99, "foo"
+    return t, 99, "foo"
 })
 
 o.AfterEach(func(t *testing.T, i int, s string) {
@@ -82,32 +84,32 @@ o.Group("DA", func() {
     })
 
     o.Group("DB", func() {
-        o.BeforeEach(func(t *testing.T, i int, s string) float64 {
+        o.BeforeEach(func(t *testing.T, i int, s string) (*testing.T, float64) {
             // Spec "B": Order = 2
             // Spec "C": Order = 2
-            return 101
+            return t, 101
         })
 
-        o.AfterEach(func(t *testing.T, i int, s string, f float64) {
+        o.AfterEach(func(t *testing.T, f float64) {
             // Spec "B": Order = 4
             // Spec "C": Order = 4
         })
 
-        o.Spec("B", func(t *testing.T, i int, s string, f float64) {
+        o.Spec("B", func(t *testing.T, f float64) {
             // Spec "B": Order = 3
         })
 
-        o.Spec("C", func(t *testing.T, i int, s string, f float64) {
+        o.Spec("C", func(t *testing.T, f float64) {
             // Spec "C": Order = 3
         })
     })
 
     o.Group("DC", func() {
-        o.BeforeEach(func(t *testing.T, i int, s string) {
+        o.BeforeEach(func(t *testing.T, i int, s string) *testing.T {
             // Will not be invoked
         })
 
-        o.AfterEach(func(t *testing.T, i int, s string) {
+        o.AfterEach(func(t *testing.T) {
             // Will not be invoked
         })
     })
@@ -116,7 +118,6 @@ o.Group("DA", func() {
 ```
 
 ### Avoiding Closure
-Why bother with returning values from a `BeforeEach`? To avoid closure of course! When running `Spec`s in parallel (which they always do), each variable needs a new instance to avoid race conditions. If you use closure, then this gets tough. So onpar will pass the arguments to the given function.
+Why bother with returning values from a `BeforeEach`? To avoid closure of course! When running `Spec`s in parallel (which they always do), each variable needs a new instance to avoid race conditions. If you use closure, then this gets tough. So onpar will pass the arguments to the given function returned by the `BeforeEach`. 
 
-### Extending onpar
-onpar strives to be simple. Some projects may require/prefer an alternative verbage. For an example of this check out [onpar-ginkgo](https://github.com/apoydence/onpar-ginkgo).
+The `BeforeEach` is a gatekeeper for arguments. The returned values from `BeforeEach` are required for the following `Spec`s. Child `Group`s are also passed what their direct parent `BeforeEach` returns.

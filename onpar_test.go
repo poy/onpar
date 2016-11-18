@@ -11,12 +11,12 @@ func TestSingleNestedSpec(t *testing.T) {
 	t.Parallel()
 	o, c := createScaffolding()
 
-	t.Run("FakeSpecs", func(tt *testing.T) {
-		o.Run(tt)
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o.Run(t)
 	})
 	objs := chanToSlice(c)
 
-	if len(objs) != 3 {
+	if len(objs) != 4 {
 		t.Fatalf("expected objs (len=%d) to have len %d", len(objs), 3)
 	}
 
@@ -38,8 +38,8 @@ func TestInvokeFirstChildAndPeerSpec(t *testing.T) {
 	t.Parallel()
 	o, c := createScaffolding()
 
-	t.Run("FakeSpecs", func(tt *testing.T) {
-		o.Run(tt)
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o.Run(t)
 	})
 	objs := chanToSlice(c)
 
@@ -61,8 +61,8 @@ func TestInvokeSecondChildAndPeerSpec(t *testing.T) {
 	t.Parallel()
 	o, c := createScaffolding()
 
-	t.Run("FakeSpecs", func(tt *testing.T) {
-		o.Run(tt)
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o.Run(t)
 	})
 	objs := chanToSlice(c)
 
@@ -84,8 +84,8 @@ func TestDoNotInvokeStrandedBeforeEach(t *testing.T) {
 	t.Parallel()
 	o, c := createScaffolding()
 
-	t.Run("FakeSpecs", func(tt *testing.T) {
-		o.Run(tt)
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o.Run(t)
 	})
 	objs := chanToSlice(c)
 
@@ -99,8 +99,8 @@ func TestDoNotInvokeStrandedAfterEach(t *testing.T) {
 	t.Parallel()
 	o, c := createScaffolding()
 
-	t.Run("FakeSpecs", func(tt *testing.T) {
-		o.Run(tt)
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o.Run(t)
 	})
 	objs := chanToSlice(c)
 
@@ -114,13 +114,13 @@ func createScaffolding() (*onpar.Onpar, <-chan *testObject) {
 	o := onpar.New()
 	objs := make(chan *testObject, 100)
 
-	o.BeforeEach(func(t *testing.T) (int, string, *testObject) {
+	o.BeforeEach(func(t *testing.T) (*testing.T, int, string, *testObject) {
 		obj := NewTestObject()
 		obj.Use("-BeforeEach")
 
 		objs <- obj
 
-		return 99, "something", obj
+		return t, 99, "something", obj
 	})
 
 	o.AfterEach(func(t *testing.T, i int, s string, o *testObject) {
@@ -154,9 +154,9 @@ func createScaffolding() (*onpar.Onpar, <-chan *testObject) {
 		})
 
 		o.Group("DB", func() {
-			o.BeforeEach(func(t *testing.T, i int, s string, o *testObject) float64 {
+			o.BeforeEach(func(t *testing.T, i int, s string, o *testObject) (*testing.T, int, string, *testObject, float64) {
 				o.Use("DB-BeforeEach")
-				return 101
+				return t, i, s, o, 101
 			})
 
 			o.AfterEach(func(t *testing.T, i int, s string, o *testObject, f float64) {
@@ -191,6 +191,24 @@ func createScaffolding() (*onpar.Onpar, <-chan *testObject) {
 				if f != 101 {
 					t.Fatalf("expected %f = %f", f, 101.0)
 				}
+			})
+
+			o.Group("DDD", func() {
+				o.BeforeEach(func(t *testing.T, i int, s string, o *testObject, f float64) (*testObject, int, *testing.T) {
+					o.Use("DDD-BeforeEach")
+					return o, i, t
+				})
+
+				o.AfterEach(func(o *testObject, i int, t *testing.T) {
+					o.Use("DDD-AfterEach")
+				})
+
+				o.Spec("E", func(o *testObject, i int, t *testing.T) {
+					o.Use("DDD-E")
+					if i != 99 {
+						t.Fatalf("expected %d = %d", i, 99)
+					}
+				})
 			})
 		})
 
