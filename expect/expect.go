@@ -1,10 +1,14 @@
 package expect
 
-import "github.com/apoydence/onpar/matchers"
+import (
+	"runtime"
+
+	"github.com/apoydence/onpar/matchers"
+)
 
 // T is a type that we can perform assertions with.
 type T interface {
-	Fatal(...interface{})
+	Fatalf(format string, args ...interface{})
 	FailNow()
 }
 
@@ -36,6 +40,7 @@ type To struct {
 func (t *To) To(matcher matchers.Matcher) {
 	_, err := matcher.Match(t.actual)
 	if err != nil {
-		t.t.Fatal(err.Error())
+		_, fileName, lineNumber, _ := runtime.Caller(1)
+		t.t.Fatalf("%s\n%s:%d", err.Error(), fileName, lineNumber)
 	}
 }

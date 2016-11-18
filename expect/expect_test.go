@@ -36,12 +36,7 @@ func TestToErrorsIfMatcherFails(t *testing.T) {
 
 	Expect(mockT, 101).To(mockMatcher)
 
-	select {
-	case msg := <-mockT.FatalInput.Arg0:
-		if !reflect.DeepEqual(msg, []interface{}{"some-error"}) {
-			t.Errorf("Expected %v to equal %v", msg, "some-error")
-		}
-	default:
-		t.Errorf("Expected Fatal() to be invoked")
+	if len(mockT.FatalfCalled) != 1 {
+		t.Error("expected Fatalf to be invoked 1 time")
 	}
 }
