@@ -2,13 +2,13 @@ package matchers
 
 import "fmt"
 
-type beFalseMatcher struct{}
+type BeFalseMatcher struct{}
 
-func BeFalse() beFalseMatcher {
-	return beFalseMatcher{}
+func BeFalse() BeFalseMatcher {
+	return BeFalseMatcher{}
 }
 
-func (m beFalseMatcher) Match(actual interface{}) (interface{}, error) {
+func (m BeFalseMatcher) Match(actual interface{}) (interface{}, error) {
 	f, ok := actual.(bool)
 	if !ok {
 		return nil, fmt.Errorf("'%v' (%[1]T) is not a bool", actual)
