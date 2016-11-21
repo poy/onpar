@@ -167,6 +167,10 @@ func verifyCall(name string, s specInfo, args []reflect.Value) {
 }
 
 func buildReadableArgs(args []reflect.Value) string {
+	if len(args) == 0 {
+		return ""
+	}
+
 	var result string
 	for _, arg := range args {
 		result = fmt.Sprintf("%s, %s", result, arg.Type().String())
