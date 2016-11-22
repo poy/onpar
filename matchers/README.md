@@ -6,12 +6,12 @@ your code is more readable.
 
 
 ## Matchers List
-- [String Matchers](##string-matchers)
-- [Logical Matchers](##logical-matchers)
-- [Error Matchers](##error-matchers)
-- [Channel Matchers](##channel-matchers)
-- [Collection Matchers](##collection-matchers)
-- [Other Matchers](##other-matchers)
+- [String Matchers](#string-matchers)
+- [Logical Matchers](#logical-matchers)
+- [Error Matchers](#error-matchers)
+- [Channel Matchers](#channel-matchers)
+- [Collection Matchers](#collection-matchers)
+- [Other Matchers](#other-matchers)
 
 
 ## String Matchers
