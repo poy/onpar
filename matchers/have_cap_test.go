@@ -40,4 +40,9 @@ func TestCap(t *testing.T) {
 	if err == nil {
 		t.Error("expected err to not be nil")
 	}
+
+	_, err = m.Match("some string")
+	if err == nil {
+		t.Error("expected err to not be nil")
+	}
 }

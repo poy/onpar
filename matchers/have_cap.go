@@ -18,10 +18,10 @@ func HaveCap(expected int) HaveCapMatcher {
 func (m HaveCapMatcher) Match(actual interface{}) (interface{}, error) {
 	var c int
 	switch reflect.TypeOf(actual).Kind() {
-	case reflect.Slice, reflect.Array, reflect.Map, reflect.String, reflect.Chan:
+	case reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
 		c = reflect.ValueOf(actual).Cap()
 	default:
-		return nil, fmt.Errorf("'%v' (%T) is not a Slice, Array, or Channel", actual, actual)
+		return nil, fmt.Errorf("'%v' (%T) is not a Slice, Array, Map or Channel", actual, actual)
 	}
 
 	if c != m.expected {
