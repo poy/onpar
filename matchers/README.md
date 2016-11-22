@@ -66,7 +66,28 @@ Expect(t, nil).To(Not(HaveOccurred()))
 
 ## Channel Matchers
 ### Always
+AlwaysMatcher matches by polling the child matcher until it returns an error.
+It will return an error the first time the child matcher returns an error.
+If the child matcher never returns an error, then it will return a nil.
+
+By default, the duration is 100ms with an interval is 10ms.
+
+```go
+isTrue := func() bool {
+  return true
+}
+Expect(t, isTrue).To(Always(BeTrue()))
+```
 ### Receive
+ReceiveMatcher only accepts a readable channel. It will error for anything else.
+It will attempt to receive from the channel but will not block.
+It fails if the channel is closed.
+
+```go
+c := make(chan bool, 1)
+c <- true
+Expect(t, c).To(Receive())
+```
 
 ## Collection Matchers
 ### HaveCap
