@@ -15,49 +15,77 @@ your code is more readable.
 
 
 ## String Matchers
-### StartsWith
+### StartWith
+StartWithMatcher accepts a string and succeeds if the actual string starts with
+the expected string.
+
 ```go
-Expect(t, "foobar").To(StartsWith("foo"))
+Expect(t, "foobar").To(StartWith("foo"))
 ```
-### EndsWith
+
+### EndWith
+EndWithMatcher accepts a string and succeeds if the actual string ends with
+the expected string.
+
 ```go
-Expect(t, "foobar").To(EndsWith("bar"))
+Expect(t, "foobar").To(EndWith("bar"))
 ```
-### Contains
+
+### Contain
+ContainMatcher accepts a string and succeeds if the expected string is a
+sub-string of the actual.
+
 ```go
-Expect(t, "foobar").To(Contains("ooba"))
+Expect(t, "foobar").To(Contain("ooba"))
 ```
 
 ## Logical Matchers
-### And
-### Or
 ### Not
+NotMatcher accepts a matcher and will succeed if the passed in matcher fails.
+
 ```go
 Expect(t, false).To(Not(BeTrue()))
 ```
+
 ### BeAbove
+BeAboveMatcher accepts a numerical value. It succeeds of the actual is more
+than the expected.
+
 ```go
 Expect(t, 100).To(BeAbove(99))
 ```
+
 ### BeBelow
+BeBelowMatcher accepts a numerical value. It succeeds if the actual is
+less than the expected.
+
 ```go
 Expect(t, 100).To(BeBelow(101))
 ```
+
 ### BeFalse
+BeFalse will succeed if actual is false.
 ```go
 Expect(t, 2 == 3).To(BeFalse())
 ```
+
 ### BeTrue
+BeTrueMatcher will succeed if actual is true.
+
 ```go
 Expect(t, 2 == 2).To(BeTrue())
 ```
+
 ### Equal
+EqualMatcher performs a DeepEqual between the actual and expected.
+
 ```go
 Expect(t, 42).To(BeEqual(42))
 ```
 
 ## Error Matchers
 ### HaveOccurred
+HaveOccurredMatcher will succeed for a non-nil error.
 ```go
 Expect(t, err).To(HaveOccurred())
 
@@ -78,6 +106,7 @@ isTrue := func() bool {
 }
 Expect(t, isTrue).To(Always(BeTrue()))
 ```
+
 ### Receive
 ReceiveMatcher only accepts a readable channel. It will error for anything else.
 It will attempt to receive from the channel but will not block.
@@ -97,14 +126,16 @@ This matcher works on Slices, Arrays, Maps and Channels.
 Expect(t, []string{"foo", "bar"}).To(HaveCap(2))
 ```
 ### HaveKey
-This matcher works on Maps.
+HaveKeyMatcher accepts map types and will succeed if the map contains the
+specified key.
 
 ```go
 Expect(t, fooMap).To(HaveKey("foo"))
 ```
 
 ### HaveLen
-This matcher works on Strings, Slices, Arrays, Maps and Channels.
+HaveLenMatcher accepts Strings, Slices, Arrays, Maps and Channels. It will
+succeed if the type passed has the specified length.
 ```go
 Expect(t, "12345").To(HaveLen(5))
 ```
