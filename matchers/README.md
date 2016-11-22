@@ -70,8 +70,23 @@ Expect(t, nil).To(Not(HaveOccurred()))
 
 ## Collection Matchers
 ### HaveCap
+This matcher works on Slices, Arrays, Maps and Channels.
+
+```go
+Expect(t, []string{"foo", "bar"}).To(HaveCap(2))
+```
 ### HaveKey
+This matcher works on Maps.
+
+```go
+Expect(t, fooMap).To(HaveKey("foo"))
+```
+
 ### HaveLen
+This matcher works on Strings, Slices, Arrays, Maps and Channels.
+```go
+Expect(t, "12345").To(HaveLen(5))
+```
 
 ## Other Matchers
 ### Chain
