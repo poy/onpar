@@ -149,6 +149,7 @@ Expect(t, fooMap).To(HaveKey("foo"))
 ### HaveLen
 HaveLenMatcher accepts Strings, Slices, Arrays, Maps and Channels. It will
 succeed if the type has the specified length.
+
 ```go
 Expect(t, "12345").To(HaveLen(5))
 ```

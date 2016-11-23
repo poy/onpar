@@ -5,10 +5,13 @@ import (
 	"reflect"
 )
 
+// HaveLenMatcher accepts Strings, Slices, Arrays, Maps and Channels. It will
+// succeed if the type has the specified length.
 type HaveLenMatcher struct {
 	expected int
 }
 
+// HaveLen returns a HaveLenMatcher with the specified length.
 func HaveLen(expected int) HaveLenMatcher {
 	return HaveLenMatcher{
 		expected: expected,
