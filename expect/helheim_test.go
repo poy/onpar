@@ -11,7 +11,6 @@ type mockT struct {
 		Format chan string
 		Args   chan []interface{}
 	}
-	FailNowCalled chan bool
 }
 
 func newMockT() *mockT {
@@ -19,16 +18,12 @@ func newMockT() *mockT {
 	m.FatalfCalled = make(chan bool, 100)
 	m.FatalfInput.Format = make(chan string, 100)
 	m.FatalfInput.Args = make(chan []interface{}, 100)
-	m.FailNowCalled = make(chan bool, 100)
 	return m
 }
 func (m *mockT) Fatalf(format string, args ...interface{}) {
 	m.FatalfCalled <- true
 	m.FatalfInput.Format <- format
 	m.FatalfInput.Args <- args
-}
-func (m *mockT) FailNow() {
-	m.FailNowCalled <- true
 }
 
 type mockMatcher struct {

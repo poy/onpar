@@ -9,7 +9,6 @@ import (
 // T is a type that we can perform assertions with.
 type T interface {
 	Fatalf(format string, args ...interface{})
-	FailNow()
 }
 
 type Expectation func(actual interface{}) *To
