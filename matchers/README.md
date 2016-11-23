@@ -98,7 +98,7 @@ AlwaysMatcher matches by polling the child matcher until it returns an error.
 It will return an error the first time the child matcher returns an error.
 If the child matcher never returns an error, then it will return a nil.
 
-By default, the duration is 100ms with an interval is 10ms.
+By default, the duration is 100ms with an interval of 10ms.
 
 ```go
 isTrue := func() bool {
@@ -118,9 +118,20 @@ c <- true
 Expect(t, c).To(Receive())
 ```
 
+### BeClosed
+BeClosedMatcher only accepts a readable channel. It will error for anything else.
+It will succeed if the channel is closed.
+
+```go
+c := make(chan bool)
+close(c)
+Expect(t, c).To(BeClosed())
+```
+
 ## Collection Matchers
 ### HaveCap
-This matcher works on Slices, Arrays, Maps and Channels.
+This matcher works on Slices, Arrays, Maps and Channels and will succeed if the
+type has the specified capacity.
 
 ```go
 Expect(t, []string{"foo", "bar"}).To(HaveCap(2))
@@ -135,7 +146,7 @@ Expect(t, fooMap).To(HaveKey("foo"))
 
 ### HaveLen
 HaveLenMatcher accepts Strings, Slices, Arrays, Maps and Channels. It will
-succeed if the type passed has the specified length.
+succeed if the type has the specified length.
 ```go
 Expect(t, "12345").To(HaveLen(5))
 ```
