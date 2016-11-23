@@ -31,12 +31,12 @@ the expected string.
 Expect(t, "foobar").To(EndWith("bar"))
 ```
 
-### Contain
-ContainMatcher accepts a string and succeeds if the expected string is a
+### ContainSubstring
+ContainSubstringMatcher accepts a string and succeeds if the expected string is a
 sub-string of the actual.
 
 ```go
-Expect(t, "foobar").To(Contain("ooba"))
+Expect(t, "foobar").To(ContainSubstring("ooba"))
 ```
 
 ## Logical Matchers
