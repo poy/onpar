@@ -3,7 +3,7 @@
 [![Join the chat at https://gitter.im/apoydence/onpar](https://badges.gitter.im/apoydence/onpar.svg)](https://gitter.im/apoydence/onpar?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Parallel testing framework for Go
 
-## Assertions in OnPar
+### Assertions
 OnPar provides built-in assertion mechanisms using `Expect` statement to make expectations. Here is some more information about `Expect` and some of the matchers that come with OnPar.
 
 - [Expect](expect/README.md)
