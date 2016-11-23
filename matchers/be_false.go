@@ -2,8 +2,10 @@ package matchers
 
 import "fmt"
 
+// BeFalseMatcher will succeed if actual is false.
 type BeFalseMatcher struct{}
 
+// BeFalse will return a BeFalseMatcher
 func BeFalse() BeFalseMatcher {
 	return BeFalseMatcher{}
 }

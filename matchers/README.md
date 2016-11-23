@@ -41,14 +41,14 @@ Expect(t, "foobar").To(ContainSubstring("ooba"))
 
 ## Logical Matchers
 ### Not
-NotMatcher accepts a matcher and will succeed if the passed in matcher fails.
+NotMatcher accepts a matcher and will succeed if the specified matcher fails.
 
 ```go
 Expect(t, false).To(Not(BeTrue()))
 ```
 
 ### BeAbove
-BeAboveMatcher accepts a numerical value. It succeeds of the actual is more
+BeAboveMatcher accepts a numerical value. It succeeds if the actual is greater
 than the expected.
 
 ```go
@@ -64,7 +64,8 @@ Expect(t, 100).To(BeBelow(101))
 ```
 
 ### BeFalse
-BeFalse will succeed if actual is false.
+BeFalseMatcher will succeed if actual is false.
+
 ```go
 Expect(t, 2 == 3).To(BeFalse())
 ```
@@ -86,6 +87,7 @@ Expect(t, 42).To(Equal(42))
 ## Error Matchers
 ### HaveOccurred
 HaveOccurredMatcher will succeed for a non-nil error.
+
 ```go
 Expect(t, err).To(HaveOccurred())
 
