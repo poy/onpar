@@ -3,6 +3,12 @@
 [![Join the chat at https://gitter.im/apoydence/onpar](https://badges.gitter.im/apoydence/onpar.svg)](https://gitter.im/apoydence/onpar?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Parallel testing framework for Go
 
+## Assertions in OnPar
+OnPar provides built-in assertion mechanisms using `Expect` statement to make expectations. Here is some more information about `Expect` and some of the matchers that come with OnPar.
+
+- [Expect](expect/README.md)
+- [Matchers](matchers/README.md)
+
 ### Specs
 Test assertions are done within a `Spec()` function. Each `Spec` has a name and a function. The function takes a `testing.T` as an argument and any output from a `BeforeEach()`. Each `Spec` is run in parallel (`t.Parallel()` is invoked for each spec before calling the given function).
 
@@ -45,7 +51,7 @@ o.Group("some-group", func() {
     o.AfterEach(func(t *testing.T, s string) {
         // ...
     })
-    
+
     o.Spec("something informative", func(t *testing.T, s string) {
         // ...
     })
