@@ -2,7 +2,7 @@ package matchers
 
 import "fmt"
 
-// BeBelowMatcher accepts a numerical value. It succeeds if the actual is
+// BeBelowMatcher accepts a float64. It succeeds if the actual is
 // less than the expected.
 type BeBelowMatcher struct {
 	expected float64

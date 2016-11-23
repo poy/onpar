@@ -38,6 +38,7 @@ sub-string of the actual.
 ```go
 Expect(t, "foobar").To(ContainSubstring("ooba"))
 ```
+### MatchRegexp
 
 ## Logical Matchers
 ### Not
@@ -48,7 +49,7 @@ Expect(t, false).To(Not(BeTrue()))
 ```
 
 ### BeAbove
-BeAboveMatcher accepts a numerical value. It succeeds if the actual is greater
+BeAboveMatcher accepts a float64. It succeeds if the actual is greater
 than the expected.
 
 ```go
@@ -56,7 +57,7 @@ Expect(t, 100).To(BeAbove(99))
 ```
 
 ### BeBelow
-BeBelowMatcher accepts a numerical value. It succeeds if the actual is
+BeBelowMatcher accepts a float64. It succeeds if the actual is
 less than the expected.
 
 ```go
@@ -95,20 +96,6 @@ Expect(t, nil).To(Not(HaveOccurred()))
 ```
 
 ## Channel Matchers
-### Always
-AlwaysMatcher matches by polling the child matcher until it returns an error.
-It will return an error the first time the child matcher returns an error.
-If the child matcher never returns an error, then it will return a nil.
-
-By default, the duration is 100ms with an interval of 10ms.
-
-```go
-isTrue := func() bool {
-  return true
-}
-Expect(t, isTrue).To(Always(BeTrue()))
-```
-
 ### Receive
 ReceiveMatcher only accepts a readable channel. It will error for anything else.
 It will attempt to receive from the channel but will not block.
@@ -155,6 +142,19 @@ Expect(t, "12345").To(HaveLen(5))
 ```
 
 ## Other Matchers
+### Always
+AlwaysMatcher matches by polling the child matcher until it returns an error.
+It will return an error the first time the child matcher returns an error.
+If the child matcher never returns an error, then it will return a nil.
+
+By default, the duration is 100ms with an interval of 10ms.
+
+```go
+isTrue := func() bool {
+  return true
+}
+Expect(t, isTrue).To(Always(BeTrue()))
+```
+
 ### Chain
 ### ViaPolling
-### MatchRegexp
