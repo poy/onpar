@@ -7,10 +7,10 @@ import (
 	"github.com/apoydence/onpar/matchers"
 )
 
-func TestEndsWith(t *testing.T) {
+func TestEndWith(t *testing.T) {
 	t.Parallel()
 
-	m := matchers.EndsWith("foo")
+	m := matchers.EndWith("foo")
 
 	_, err := m.Match("bar")
 	if err == nil {

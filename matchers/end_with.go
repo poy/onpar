@@ -5,17 +5,17 @@ import (
 	"strings"
 )
 
-type EndsWithMatcher struct {
+type EndWithMatcher struct {
 	suffix string
 }
 
-func EndsWith(suffix string) EndsWithMatcher {
-	return EndsWithMatcher{
+func EndWith(suffix string) EndWithMatcher {
+	return EndWithMatcher{
 		suffix: suffix,
 	}
 }
 
-func (m EndsWithMatcher) Match(actual interface{}) (interface{}, error) {
+func (m EndWithMatcher) Match(actual interface{}) (interface{}, error) {
 	s, ok := actual.(string)
 	if !ok {
 		return nil, fmt.Errorf("'%v' (%T) is not a string", actual, actual)

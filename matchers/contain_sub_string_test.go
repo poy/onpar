@@ -7,10 +7,10 @@ import (
 	"github.com/apoydence/onpar/matchers"
 )
 
-func TestStartsWith(t *testing.T) {
+func TestContainSubstring(t *testing.T) {
 	t.Parallel()
 
-	m := matchers.StartsWith("foo")
+	m := matchers.ContainSubstring("foo")
 
 	_, err := m.Match("bar")
 	if err == nil {
