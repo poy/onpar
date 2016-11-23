@@ -86,7 +86,7 @@ Expect(t, 42).To(Equal(42))
 
 ## Error Matchers
 ### HaveOccurred
-HaveOccurredMatcher will succeed for a non-nil error.
+HaveOccurredMatcher will succeed if the actual value is a non-nil error.
 
 ```go
 Expect(t, err).To(HaveOccurred())
