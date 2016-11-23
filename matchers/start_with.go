@@ -5,17 +5,17 @@ import (
 	"strings"
 )
 
-type StartsWithMatcher struct {
+type StartWithMatcher struct {
 	prefix string
 }
 
-func StartsWith(prefix string) StartsWithMatcher {
-	return StartsWithMatcher{
+func StartWith(prefix string) StartWithMatcher {
+	return StartWithMatcher{
 		prefix: prefix,
 	}
 }
 
-func (m StartsWithMatcher) Match(actual interface{}) (interface{}, error) {
+func (m StartWithMatcher) Match(actual interface{}) (interface{}, error) {
 	s, ok := actual.(string)
 	if !ok {
 		return nil, fmt.Errorf("'%v' (%T) is not a string", actual, actual)
