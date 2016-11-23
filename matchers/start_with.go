@@ -5,10 +5,13 @@ import (
 	"strings"
 )
 
+// StartWithMatcher accepts a string and succeeds
+// if the actual string starts with the expected string.
 type StartWithMatcher struct {
 	prefix string
 }
 
+// StartWith returns a StartWithMatcher with the expected prefix.
 func StartWith(prefix string) StartWithMatcher {
 	return StartWithMatcher{
 		prefix: prefix,

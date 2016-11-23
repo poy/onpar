@@ -5,9 +5,12 @@ import (
 	"reflect"
 )
 
-type BeClosedMatcher struct {
-}
+// BeClosedMatcher only accepts a readable channel.
+// It will error for anything else.
+// It will succeed if the channel is closed.
+type BeClosedMatcher struct{}
 
+// BeClosed returns a BeClosedMatcher
 func BeClosed() BeClosedMatcher {
 	return BeClosedMatcher{}
 }

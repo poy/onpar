@@ -5,9 +5,12 @@ import (
 	"reflect"
 )
 
-type ReceiveMatcher struct {
-}
+// ReceiveMatcher only accepts a readable channel. It will error for anything else.
+// It will attempt to receive from the channel but will not block.
+// It fails if the channel is closed.
+type ReceiveMatcher struct{}
 
+// Receive will return a ReceiveMatcher
 func Receive() ReceiveMatcher {
 	return ReceiveMatcher{}
 }

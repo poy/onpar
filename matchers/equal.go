@@ -5,10 +5,12 @@ import (
 	"reflect"
 )
 
+// EqualMatcher performs a DeepEqual between the actual and expected.
 type EqualMatcher struct {
 	expected interface{}
 }
 
+// Equal returns an EqualMatcher with the expected value
 func Equal(expected interface{}) EqualMatcher {
 	return EqualMatcher{
 		expected: expected,

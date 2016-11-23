@@ -2,10 +2,13 @@ package matchers
 
 import "fmt"
 
+// BeBelowMatcher accepts a float64. It succeeds if the actual is
+// less than the expected.
 type BeBelowMatcher struct {
 	expected float64
 }
 
+// BeBelow returns a BeBelowMatcher with the expected value.
 func BeBelow(expected float64) BeBelowMatcher {
 	return BeBelowMatcher{
 		expected: expected,

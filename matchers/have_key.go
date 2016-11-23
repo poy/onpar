@@ -5,10 +5,13 @@ import (
 	"reflect"
 )
 
+// HaveKeyMatcher accepts map types and will succeed if the map contains the
+// specified key.
 type HaveKeyMatcher struct {
 	key interface{}
 }
 
+// HaveKey returns a HaveKeyMatcher with the specified key.
 func HaveKey(key interface{}) HaveKeyMatcher {
 	return HaveKeyMatcher{
 		key: key,

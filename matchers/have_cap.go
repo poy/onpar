@@ -5,10 +5,13 @@ import (
 	"reflect"
 )
 
+// This matcher works on Slices, Arrays, Maps and Channels and will succeed if the
+// type has the specified capacity.
 type HaveCapMatcher struct {
 	expected int
 }
 
+// HaveCap returns a HaveCapMatcher with the specified capacity
 func HaveCap(expected int) HaveCapMatcher {
 	return HaveCapMatcher{
 		expected: expected,

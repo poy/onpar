@@ -5,10 +5,13 @@ import (
 	"strings"
 )
 
+// EndWithMatcher accepts a string and succeeds
+// if the actual string ends with the expected string.
 type EndWithMatcher struct {
 	suffix string
 }
 
+// EndWith returns an EndWithMatcher with the expected suffix.
 func EndWith(suffix string) EndWithMatcher {
 	return EndWithMatcher{
 		suffix: suffix,
