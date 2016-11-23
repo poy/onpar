@@ -80,7 +80,7 @@ Expect(t, 2 == 2).To(BeTrue())
 EqualMatcher performs a DeepEqual between the actual and expected.
 
 ```go
-Expect(t, 42).To(BeEqual(42))
+Expect(t, 42).To(Equal(42))
 ```
 
 ## Error Matchers
