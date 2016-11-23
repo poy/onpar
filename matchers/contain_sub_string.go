@@ -5,10 +5,14 @@ import (
 	"strings"
 )
 
+// ContainSubstringMatcher accepts a string and succeeds
+// if the actual string contains the expected string.
 type ContainSubstringMatcher struct {
 	substr string
 }
 
+// ContainSubstring returns a ContainSubstringMatcher with the
+// expected substring.
 func ContainSubstring(substr string) ContainSubstringMatcher {
 	return ContainSubstringMatcher{
 		substr: substr,
