@@ -19,7 +19,7 @@ func Equal(expected interface{}) EqualMatcher {
 
 func (m EqualMatcher) Match(actual interface{}) (interface{}, error) {
 	if !reflect.DeepEqual(actual, m.expected) {
-		return nil, fmt.Errorf("%v to equal %v", actual, m.expected)
+		return nil, fmt.Errorf("%v (%T) to equal %v (%T)", actual, actual, m.expected, m.expected)
 	}
 
 	return actual, nil
