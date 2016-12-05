@@ -7,9 +7,9 @@ import (
 	"github.com/apoydence/onpar/matchers"
 )
 
-func TestContains(t *testing.T) {
+func TestContain(t *testing.T) {
 	t.Parallel()
-	m := matchers.Contains("a", 1)
+	m := matchers.Contain("a", 1)
 	values := []interface{}{"a", "b", "c", 1, 2, 3}
 	v, err := m.Match(values)
 

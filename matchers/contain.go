@@ -5,17 +5,17 @@ import (
 	"reflect"
 )
 
-type ContainsMatcher struct {
+type ContainMatcher struct {
 	values []interface{}
 }
 
-func Contains(values ...interface{}) ContainsMatcher {
-	return ContainsMatcher{
+func Contain(values ...interface{}) ContainMatcher {
+	return ContainMatcher{
 		values: values,
 	}
 }
 
-func (m ContainsMatcher) Match(actual interface{}) (interface{}, error) {
+func (m ContainMatcher) Match(actual interface{}) (interface{}, error) {
 	actualType := reflect.TypeOf(actual)
 	if actualType.Kind() != reflect.Slice && actualType.Kind() != reflect.Array {
 		return nil, fmt.Errorf("%s is not a Slice or Array", actualType.Kind())
@@ -31,7 +31,7 @@ func (m ContainsMatcher) Match(actual interface{}) (interface{}, error) {
 	return actual, nil
 }
 
-func (m ContainsMatcher) containsElem(actual reflect.Value, elem interface{}) bool {
+func (m ContainMatcher) containsElem(actual reflect.Value, elem interface{}) bool {
 	for i := 0; i < actual.Len(); i++ {
 		if reflect.DeepEqual(actual.Index(i).Interface(), elem) {
 			return true
