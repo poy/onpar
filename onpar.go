@@ -129,12 +129,11 @@ func (s specInfo) invoke(t *testing.T, l *level) {
 		tt.Parallel()
 
 		args, levelArgs := invokeBeforeEach(tt, l)
+		defer invokeAfterEach(tt, l, levelArgs)
 
 		verifySpecCall(s, args)
 
 		s.f.Call(args)
-
-		invokeAfterEach(tt, l, levelArgs)
 	})
 }
 
