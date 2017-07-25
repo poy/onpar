@@ -7,7 +7,7 @@ import (
 )
 
 // ViaPollingMatcher matches by polling the child matcher until
-// it returns a sucess. It will return success the first time
+// it returns a success. It will return success the first time
 // the child matcher returns a success. If the child matcher
 // never returns a nil, then it will return the last error.
 //
