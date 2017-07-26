@@ -17,6 +17,11 @@ func TestAbove(t *testing.T) {
 		t.Error("expected err to not be nil")
 	}
 
+	_, err = m.Match(int(99))
+	if err == nil {
+		t.Error("expected err to not be nil")
+	}
+
 	v, err := m.Match(103.0)
 	if err != nil {
 		t.Error("expected err to be nil")
@@ -24,6 +29,11 @@ func TestAbove(t *testing.T) {
 
 	if !reflect.DeepEqual(v, 103.0) {
 		t.Errorf("expected %v to equal %v", v, 103.0)
+	}
+
+	v, err = m.Match(int(103))
+	if err != nil {
+		t.Error("expected err to be nil")
 	}
 
 	_, err = m.Match("invalid")

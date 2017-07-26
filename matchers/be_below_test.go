@@ -21,7 +21,17 @@ func TestBelow(t *testing.T) {
 		t.Errorf("expected %v to equal %v", v, 99.0)
 	}
 
+	v, err = m.Match(int(99))
+	if err != nil {
+		t.Error("expected err to be nil")
+	}
+
 	_, err = m.Match(103.0)
+	if err == nil {
+		t.Error("expected err to not be nil")
+	}
+
+	_, err = m.Match(int(103))
 	if err == nil {
 		t.Error("expected err to not be nil")
 	}

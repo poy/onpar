@@ -16,14 +16,31 @@ func BeAbove(expected float64) BeAboveMatcher {
 }
 
 func (m BeAboveMatcher) Match(actual interface{}) (interface{}, error) {
-	f, ok := actual.(float64)
-	if !ok {
-		return nil, fmt.Errorf("'%v' (%T) is not a float64", actual, actual)
+	f, err := m.toFloat(actual)
+	if err != nil {
+		return nil, err
 	}
 
 	if f <= m.expected {
-		return nil, fmt.Errorf("%f is not above %f", actual, m.expected)
+		return nil, fmt.Errorf("%v is not above %f", actual, m.expected)
 	}
 
 	return actual, nil
+}
+
+func (m BeAboveMatcher) toFloat(actual interface{}) (float64, error) {
+	switch x := actual.(type) {
+	case int:
+		return float64(x), nil
+	case int32:
+		return float64(x), nil
+	case int64:
+		return float64(x), nil
+	case float32:
+		return float64(x), nil
+	case float64:
+		return x, nil
+	default:
+		return 0, fmt.Errorf("Unsupported type %T", actual)
+	}
 }
