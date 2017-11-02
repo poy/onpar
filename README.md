@@ -1,5 +1,5 @@
 # onpar
-[![GoDoc][go-doc-badge]][go-doc][![travis][travis-badge]][travis]
+[![GoDoc][go-doc-badge]][go-doc] [![travis][travis-badge]][travis]
 
 Parallel testing framework for Go
 
