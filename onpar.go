@@ -229,6 +229,9 @@ func invokeAfterEach(tt *testing.T, l *level, levelArgs map[*level][]reflect.Val
 func buildDesc(l *level, i specInfo) string {
 	desc := i.name
 	rTraverse(l, func(ll *level) {
+		if ll.name == "" {
+			return
+		}
 		desc = fmt.Sprintf("%s/%s", ll.name, desc)
 	})
 
