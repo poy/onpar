@@ -21,7 +21,7 @@ func (m BeBelowMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	if f > m.expected {
+	if f >= m.expected {
 		return nil, fmt.Errorf("%v is not below %f", actual, m.expected)
 	}
 

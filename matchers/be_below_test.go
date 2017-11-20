@@ -26,6 +26,11 @@ func TestBelow(t *testing.T) {
 		t.Error("expected err to be nil")
 	}
 
+	_, err = m.Match(101.0)
+	if err == nil {
+		t.Error("expected err to not be nil")
+	}
+
 	_, err = m.Match(103.0)
 	if err == nil {
 		t.Error("expected err to not be nil")

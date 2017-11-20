@@ -12,7 +12,12 @@ func TestAbove(t *testing.T) {
 
 	m := matchers.BeAbove(101)
 
-	_, err := m.Match(99.0)
+	_, err := m.Match(101.0)
+	if err == nil {
+		t.Error("expected err to not be nil")
+	}
+
+	_, err = m.Match(99.0)
 	if err == nil {
 		t.Error("expected err to not be nil")
 	}
