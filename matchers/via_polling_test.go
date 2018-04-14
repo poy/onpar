@@ -182,6 +182,6 @@ func TestViaPollingUsesChildMatcherErr(t *testing.T) {
 	}
 
 	if err.Error() != "some-message" {
-		t.Error("expected err to have message: %s", "some-message")
+		t.Errorf("expected err to have message: %s", "some-message")
 	}
 }
