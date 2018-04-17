@@ -1,6 +1,7 @@
 package expect
 
 import (
+	"path"
 	"runtime"
 
 	"github.com/apoydence/onpar/matchers"
@@ -50,6 +51,6 @@ func (t *To) To(matcher matchers.Matcher) {
 	_, err := matcher.Match(t.actual)
 	if err != nil {
 		_, fileName, lineNumber, _ := runtime.Caller(1)
-		t.t.Fatalf("%s\n%s:%d", err.Error(), fileName, lineNumber)
+		t.t.Fatalf("%s\n%s:%d", err.Error(), path.Base(fileName), lineNumber)
 	}
 }
