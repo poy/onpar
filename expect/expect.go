@@ -4,7 +4,7 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/apoydence/onpar/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 // T is a type that we can perform assertions with.

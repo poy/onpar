@@ -3,8 +3,8 @@ package async_test
 import (
 	"testing"
 
-	. "github.com/apoydence/onpar/expect"
-	. "github.com/apoydence/onpar/matchers"
+	. "github.com/poy/onpar/expect"
+	. "github.com/poy/onpar/matchers"
 )
 
 func TestChannel(t *testing.T) {

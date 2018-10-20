@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/apoydence/onpar/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestChainPassesResultOnSuccess(t *testing.T) {

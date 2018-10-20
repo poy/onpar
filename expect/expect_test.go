@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/apoydence/onpar/expect"
+	. "github.com/poy/onpar/expect"
 )
 
 func TestToPassesActualToMatcher(t *testing.T) {

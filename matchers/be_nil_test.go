@@ -3,7 +3,7 @@ package matchers_test
 import (
 	"testing"
 
-	"github.com/apoydence/onpar/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestIsNil(t *testing.T) {

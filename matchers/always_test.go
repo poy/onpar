@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apoydence/onpar/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestFailsWhenMatcherFails(t *testing.T) {

@@ -129,11 +129,11 @@ func TestRunOrder(t *testing.T) {
 ```
 
 ### Avoiding Closure
-Why bother with returning values from a `BeforeEach`? To avoid closure of course! When running `Spec`s in parallel (which they always do), each variable needs a new instance to avoid race conditions. If you use closure, then this gets tough. So onpar will pass the arguments to the given function returned by the `BeforeEach`. 
+Why bother with returning values from a `BeforeEach`? To avoid closure of course! When running `Spec`s in parallel (which they always do), each variable needs a new instance to avoid race conditions. If you use closure, then this gets tough. So onpar will pass the arguments to the given function returned by the `BeforeEach`.
 
 The `BeforeEach` is a gatekeeper for arguments. The returned values from `BeforeEach` are required for the following `Spec`s. Child `Group`s are also passed what their direct parent `BeforeEach` returns.
 
-[go-doc-badge]:             https://godoc.org/github.com/apoydence/onpar?status.svg
-[go-doc]:                   https://godoc.org/github.com/apoydence/onpar
-[travis-badge]:             https://travis-ci.org/apoydence/onpar.svg?branch=master
-[travis]:                   https://travis-ci.org/apoydence/onpar?branch=master
+[go-doc-badge]:             https://godoc.org/github.com/poy/onpar?status.svg
+[go-doc]:                   https://godoc.org/github.com/poy/onpar
+[travis-badge]:             https://travis-ci.org/poy/onpar.svg?branch=master
+[travis]:                   https://travis-ci.org/poy/onpar?branch=master

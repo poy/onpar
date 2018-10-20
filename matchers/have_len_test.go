@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/apoydence/onpar/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestLen(t *testing.T) {
