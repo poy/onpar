@@ -37,8 +37,8 @@ func (m MatchJSONMatcher) Match(actual interface{}) (interface{}, error) {
 	return actual, nil
 }
 
-func (m MatchJSONMatcher) unmarshal(x interface{}) (map[string]interface{}, string, error) {
-	var result map[string]interface{}
+func (m MatchJSONMatcher) unmarshal(x interface{}) (interface{}, string, error) {
+	var result interface{}
 	var s string
 
 	switch x := x.(type) {
