@@ -4,8 +4,21 @@ import (
 	"path"
 	"runtime"
 
+	"github.com/poy/onpar/diff"
 	"github.com/poy/onpar/matchers"
 )
+
+// Matcher is any type used by this package to match an actual value
+// against an expected value.
+type Matcher interface {
+	Match(actual interface{}) (resultValue interface{}, err error)
+}
+
+// Differ is a type of matcher that will need to diff its expected and
+// actual values.
+type Differ interface {
+	UseDiffOpts(opts ...diff.Opt)
+}
 
 // T is a type that we can perform assertions with.
 type T interface {
@@ -18,34 +31,60 @@ type THelper interface {
 	Helper()
 }
 
+// Opt is an option that can be passed to New to modify Expectations.
+type Opt func(To) To
+
+// WithDiffOpts sets the diff.Opt options that will be passed
+// to diff.Show when showing a diff between two types during
+// failed matchers.
+func WithDiffOpts(opts ...diff.Opt) Opt {
+	return func(t To) To {
+		t.diffOpts = opts
+		return t
+	}
+}
+
+// Expectation is provided to make it clear what the expect function does.
 type Expectation func(actual interface{}) *To
 
-func New(t T) Expectation {
+// New creates a new Expectation
+func New(t T, opts ...Opt) Expectation {
 	return func(actual interface{}) *To {
-		return &To{
+		to := To{
 			actual: actual,
 			t:      t,
 		}
+		for _, opt := range opts {
+			to = opt(to)
+		}
+		return &to
 	}
 }
 
+// Expect performs New(t)(actual).
 func Expect(t T, actual interface{}) *To {
-	return &To{
-		actual: actual,
-		t:      t,
-	}
+	return New(t)(actual)
 }
 
+// To is a type that stores actual values prior to running them through
+// matchers.
 type To struct {
 	actual    interface{}
 	parentErr error
 
-	t T
+	t        T
+	diffOpts []diff.Opt
 }
 
+// To takes a matcher and passes it the actual value, failing t's T value
+// if the matcher returns an error.
 func (t *To) To(matcher matchers.Matcher) {
 	if helper, ok := t.t.(THelper); ok {
 		helper.Helper()
+	}
+
+	if d, ok := matcher.(Differ); ok {
+		d.UseDiffOpts(t.diffOpts...)
 	}
 
 	_, err := matcher.Match(t.actual)
