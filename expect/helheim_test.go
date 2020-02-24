@@ -5,25 +5,21 @@
 
 package expect_test
 
-type mockT struct {
-	FatalfCalled chan bool
-	FatalfInput  struct {
-		Format chan string
-		Args   chan []interface{}
-	}
+import (
+	"github.com/poy/onpar/diff"
+)
+
+type mockTHelper struct {
+	HelperCalled chan bool
 }
 
-func newMockT() *mockT {
-	m := &mockT{}
-	m.FatalfCalled = make(chan bool, 100)
-	m.FatalfInput.Format = make(chan string, 100)
-	m.FatalfInput.Args = make(chan []interface{}, 100)
+func newMockTHelper() *mockTHelper {
+	m := &mockTHelper{}
+	m.HelperCalled = make(chan bool, 100)
 	return m
 }
-func (m *mockT) Fatalf(format string, args ...interface{}) {
-	m.FatalfCalled <- true
-	m.FatalfInput.Format <- format
-	m.FatalfInput.Args <- args
+func (m *mockTHelper) Helper() {
+	m.HelperCalled <- true
 }
 
 type mockMatcher struct {
@@ -49,4 +45,43 @@ func (m *mockMatcher) Match(actual interface{}) (resultValue interface{}, err er
 	m.MatchCalled <- true
 	m.MatchInput.Actual <- actual
 	return <-m.MatchOutput.ResultValue, <-m.MatchOutput.Err
+}
+
+type mockDiffer struct {
+	UseDiffOptsCalled chan bool
+	UseDiffOptsInput  struct {
+		Opts chan []diff.Opt
+	}
+}
+
+func newMockDiffer() *mockDiffer {
+	m := &mockDiffer{}
+	m.UseDiffOptsCalled = make(chan bool, 100)
+	m.UseDiffOptsInput.Opts = make(chan []diff.Opt, 100)
+	return m
+}
+func (m *mockDiffer) UseDiffOpts(opts ...diff.Opt) {
+	m.UseDiffOptsCalled <- true
+	m.UseDiffOptsInput.Opts <- opts
+}
+
+type mockT struct {
+	FatalfCalled chan bool
+	FatalfInput  struct {
+		Format chan string
+		Args   chan []interface{}
+	}
+}
+
+func newMockT() *mockT {
+	m := &mockT{}
+	m.FatalfCalled = make(chan bool, 100)
+	m.FatalfInput.Format = make(chan string, 100)
+	m.FatalfInput.Args = make(chan []interface{}, 100)
+	return m
+}
+func (m *mockT) Fatalf(format string, args ...interface{}) {
+	m.FatalfCalled <- true
+	m.FatalfInput.Format <- format
+	m.FatalfInput.Args <- args
 }
