@@ -5,24 +5,43 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
+
+	"github.com/poy/onpar/diff"
 )
 
-// Stores the state of the specs and groups
+// Opt is an option type to pass to onpar's constructor.
+type Opt func(Onpar) Onpar
+
+// WithCallCount sets a call count to pass to runtime.Caller.
+func WithCallCount(count int) Opt {
+	return func(o Onpar) Onpar {
+		o.callCount = count
+		return o
+	}
+}
+
+// Onpar stores the state of the specs and groups
 type Onpar struct {
 	current   *level
 	callCount int
+	diffOpts  []diff.Opt
 }
 
-// Creates a new Onpar test suite
-func New() *Onpar {
-	return NewWithCallCount(1)
-}
-
-func NewWithCallCount(count int) *Onpar {
-	return &Onpar{
-		current:   new(level),
-		callCount: count,
+// New creates a new Onpar test suite
+func New(opts ...Opt) *Onpar {
+	o := Onpar{
+		current:   &level{},
+		callCount: 1,
 	}
+	for _, opt := range opts {
+		o = opt(o)
+	}
+	return &o
+}
+
+// NewWithCallCount is deprecated syntax for New(WithCallCount(count))
+func NewWithCallCount(count int) *Onpar {
+	return New(WithCallCount(count))
 }
 
 // Spec is a test that runs in parallel with other specs. The provided function
