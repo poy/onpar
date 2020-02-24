@@ -70,6 +70,8 @@ func TestDiff(t *testing.T) {
 		{"different strings", "foo", "bar", ">foo!=bar<"},
 		{"different ints", 12, 14, ">12!=14<"},
 		{"different substrings", "foobarbaz", "fooeggbaz", "foo>bar!=egg<baz"},
+		{"different maps", map[string]string{"foo": "bar", "baz": "bazinga"}, map[string]string{"foo": "baz", "bazinga": "baz"},
+			"{foo: ba>r!=z<, >missing key bazinga!=bazinga: baz<, >extra key baz: bazinga!=baz: nil<}"},
 		{"different struct fields", testStruct{Foo: "foo", Bar: 42}, testStruct{Foo: "bar", Bar: 42}, "diff_test.testStruct{Foo: >foo!=bar<, Bar: 42}"},
 	} {
 		tt := tt

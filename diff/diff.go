@@ -223,7 +223,7 @@ func show(o ShowOpts, av, bv reflect.Value) string {
 			k := kv.Interface()
 			bmv := bv.MapIndex(kv)
 			amv := av.MapIndex(kv)
-			if amv.IsZero() {
+			if !amv.IsValid() {
 				parts = append(parts, showDiff("%s", fmt.Sprintf("missing key %v", k), fmt.Sprintf("%v: %v", k, bmv.Interface())))
 				continue
 			}
@@ -232,7 +232,7 @@ func show(o ShowOpts, av, bv reflect.Value) string {
 		for _, kv := range av.MapKeys() {
 			// We've already compared all keys that exist in both maps; now we're
 			// just looking for keys that only exist in a.
-			if bv.MapIndex(kv).IsZero() {
+			if !bv.MapIndex(kv).IsValid() {
 				k := kv.Interface()
 				parts = append(parts, showDiff("%s", fmt.Sprintf("extra key %v: %v", k, av.MapIndex(kv).Interface()), fmt.Sprintf("%v: nil", k)))
 				continue
