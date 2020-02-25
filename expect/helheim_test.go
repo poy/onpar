@@ -6,7 +6,7 @@
 package expect_test
 
 import (
-	"github.com/poy/onpar/diff"
+	"github.com/poy/onpar/matchers"
 )
 
 type mockTHelper struct {
@@ -22,7 +22,7 @@ func (m *mockTHelper) Helper() {
 	m.HelperCalled <- true
 }
 
-type mockMatcher struct {
+type mockToMatcher struct {
 	MatchCalled chan bool
 	MatchInput  struct {
 		Actual chan interface{}
@@ -33,36 +33,36 @@ type mockMatcher struct {
 	}
 }
 
-func newMockMatcher() *mockMatcher {
-	m := &mockMatcher{}
+func newMockToMatcher() *mockToMatcher {
+	m := &mockToMatcher{}
 	m.MatchCalled = make(chan bool, 100)
 	m.MatchInput.Actual = make(chan interface{}, 100)
 	m.MatchOutput.ResultValue = make(chan interface{}, 100)
 	m.MatchOutput.Err = make(chan error, 100)
 	return m
 }
-func (m *mockMatcher) Match(actual interface{}) (resultValue interface{}, err error) {
+func (m *mockToMatcher) Match(actual interface{}) (resultValue interface{}, err error) {
 	m.MatchCalled <- true
 	m.MatchInput.Actual <- actual
 	return <-m.MatchOutput.ResultValue, <-m.MatchOutput.Err
 }
 
-type mockDiffer struct {
-	UseDiffOptsCalled chan bool
-	UseDiffOptsInput  struct {
-		Opts chan []diff.Opt
+type mockDiffMatcher struct {
+	UseDifferCalled chan bool
+	UseDifferInput  struct {
+		Arg0 chan matchers.Differ
 	}
 }
 
-func newMockDiffer() *mockDiffer {
-	m := &mockDiffer{}
-	m.UseDiffOptsCalled = make(chan bool, 100)
-	m.UseDiffOptsInput.Opts = make(chan []diff.Opt, 100)
+func newMockDiffMatcher() *mockDiffMatcher {
+	m := &mockDiffMatcher{}
+	m.UseDifferCalled = make(chan bool, 100)
+	m.UseDifferInput.Arg0 = make(chan matchers.Differ, 100)
 	return m
 }
-func (m *mockDiffer) UseDiffOpts(opts ...diff.Opt) {
-	m.UseDiffOptsCalled <- true
-	m.UseDiffOptsInput.Opts <- opts
+func (m *mockDiffMatcher) UseDiffer(arg0 matchers.Differ) {
+	m.UseDifferCalled <- true
+	m.UseDifferInput.Arg0 <- arg0
 }
 
 type mockT struct {
@@ -84,4 +84,29 @@ func (m *mockT) Fatalf(format string, args ...interface{}) {
 	m.FatalfCalled <- true
 	m.FatalfInput.Format <- format
 	m.FatalfInput.Args <- args
+}
+
+type mockDiffer struct {
+	DiffCalled chan bool
+	DiffInput  struct {
+		Actual, Expected chan interface{}
+	}
+	DiffOutput struct {
+		Ret0 chan string
+	}
+}
+
+func newMockDiffer() *mockDiffer {
+	m := &mockDiffer{}
+	m.DiffCalled = make(chan bool, 100)
+	m.DiffInput.Actual = make(chan interface{}, 100)
+	m.DiffInput.Expected = make(chan interface{}, 100)
+	m.DiffOutput.Ret0 = make(chan string, 100)
+	return m
+}
+func (m *mockDiffer) Diff(actual, expected interface{}) string {
+	m.DiffCalled <- true
+	m.DiffInput.Actual <- actual
+	m.DiffInput.Expected <- expected
+	return <-m.DiffOutput.Ret0
 }

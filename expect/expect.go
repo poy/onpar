@@ -4,20 +4,18 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/poy/onpar/diff"
 	"github.com/poy/onpar/matchers"
 )
 
-// Matcher is any type used by this package to match an actual value
-// against an expected value.
-type Matcher interface {
+// ToMatcher is a type that can be passed to (*To).To().
+type ToMatcher interface {
 	Match(actual interface{}) (resultValue interface{}, err error)
 }
 
 // Differ is a type of matcher that will need to diff its expected and
 // actual values.
-type Differ interface {
-	UseDiffOpts(opts ...diff.Opt)
+type DiffMatcher interface {
+	UseDiffer(matchers.Differ)
 }
 
 // T is a type that we can perform assertions with.
@@ -34,12 +32,11 @@ type THelper interface {
 // Opt is an option that can be passed to New to modify Expectations.
 type Opt func(To) To
 
-// WithDiffOpts sets the diff.Opt options that will be passed
-// to diff.Show when showing a diff between two types during
-// failed matchers.
-func WithDiffOpts(opts ...diff.Opt) Opt {
+// WithDiffer stores the diff.Differ to be used when displaying diffs between
+// actual and expected values.
+func WithDiffer(d matchers.Differ) Opt {
 	return func(t To) To {
-		t.diffOpts = opts
+		t.differ = d
 		return t
 	}
 }
@@ -72,8 +69,8 @@ type To struct {
 	actual    interface{}
 	parentErr error
 
-	t        T
-	diffOpts []diff.Opt
+	t      T
+	differ matchers.Differ
 }
 
 // To takes a matcher and passes it the actual value, failing t's T value
@@ -83,8 +80,8 @@ func (t *To) To(matcher matchers.Matcher) {
 		helper.Helper()
 	}
 
-	if d, ok := matcher.(Differ); ok {
-		d.UseDiffOpts(t.diffOpts...)
+	if d, ok := matcher.(DiffMatcher); ok {
+		d.UseDiffer(t.differ)
 	}
 
 	_, err := matcher.Match(t.actual)

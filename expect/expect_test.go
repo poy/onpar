@@ -8,50 +8,34 @@ import (
 	"testing"
 
 	"github.com/nelsam/hel/pers"
-	"github.com/poy/onpar/diff"
 	. "github.com/poy/onpar/expect"
-	"github.com/poy/onpar/matchers"
 )
 
 type diffMatcher struct {
-	mockDiffer
-	mockMatcher
+	mockToMatcher
+	mockDiffMatcher
 }
 
 func TestToRespectsDifferMatchers(t *testing.T) {
 	mockT := newMockT()
-	m := newMockMatcher()
-	d := newMockDiffer()
+	d := newMockDiffMatcher()
+	m := newMockToMatcher()
 	mockMatcher := &diffMatcher{
-		mockDiffer:  *d,
-		mockMatcher: *m,
+		mockDiffMatcher: *d,
+		mockToMatcher:   *m,
 	}
-	done, err := pers.ConsistentlyReturn(mockMatcher.MatchOutput, nil, nil)
-	if err != nil {
-		t.Fatalf("faild to consistenly return")
-	}
-	defer done()
+	pers.Return(mockMatcher.MatchOutput, nil, nil)
+	mockDiffer := newMockDiffer()
 
-	actualOpt := diff.Actual(diff.WithFGColor(diff.Red))
-	expectedOpt := diff.Expected(diff.WithFGColor(diff.Green))
-
-	f := New(mockT, WithDiffOpts(actualOpt, expectedOpt))
+	f := New(mockT, WithDiffer(mockDiffer))
 	f(101).To(mockMatcher)
 
-	select {
-	case <-mockMatcher.UseDiffOptsCalled:
-		opts := <-mockMatcher.UseDiffOptsInput.Opts
-		Expect(t, opts).To(matchers.HaveLen(2))
-		Expect(t, fmt.Sprintf("%p", opts[0])).To(matchers.Equal(fmt.Sprintf("%p", actualOpt)))
-		Expect(t, fmt.Sprintf("%p", opts[1])).To(matchers.Equal(fmt.Sprintf("%p", expectedOpt)))
-	default:
-		t.Fatalf("Expected matcher.UseDiffOpts to be called, but it was not.")
-	}
+	Expect(t, mockMatcher).To(pers.HaveMethodExecuted("UseDiffer", pers.WithArgs(mockDiffer)))
 }
 
 func TestToPassesActualToMatcher(t *testing.T) {
 	mockT := newMockT()
-	mockMatcher := newMockMatcher()
+	mockMatcher := newMockToMatcher()
 	close(mockMatcher.MatchOutput.ResultValue)
 	close(mockMatcher.MatchOutput.Err)
 
@@ -69,7 +53,7 @@ func TestToPassesActualToMatcher(t *testing.T) {
 
 func TestToErrorsIfMatcherFails(t *testing.T) {
 	mockT := newMockT()
-	mockMatcher := newMockMatcher()
+	mockMatcher := newMockToMatcher()
 	close(mockMatcher.MatchOutput.ResultValue)
 	mockMatcher.MatchOutput.Err <- fmt.Errorf("some-error")
 
