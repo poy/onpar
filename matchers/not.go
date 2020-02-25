@@ -22,7 +22,7 @@ func Not(child Matcher) NotMatcher {
 func (m NotMatcher) Match(actual interface{}) (interface{}, error) {
 	v, err := m.child.Match(actual)
 	if err == nil {
-		return nil, fmt.Errorf("match %#v", m.child)
+		return nil, fmt.Errorf("%+v (%[1]T) was expected to fail matcher %#v", actual, m.child)
 	}
 
 	return v, nil
