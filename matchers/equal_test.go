@@ -5,7 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/poy/onpar/diff"
+	"github.com/nelsam/hel/pers"
+	"github.com/poy/onpar/expect"
 	"github.com/poy/onpar/matchers"
 )
 
@@ -32,12 +33,15 @@ func TestEqualDiff(t *testing.T) {
 	t.Parallel()
 
 	m := matchers.Equal(101)
-	m.UseDiffOpts(diff.Actual(diff.WithFormat("%s!=")))
+	mockDiffer := newMockDiffer()
+	pers.Return(mockDiffer.DiffOutput, "this is a valid diff")
+	m.UseDiffer(mockDiffer)
 	_, err := m.Match(103)
 	if err == nil {
 		t.Fatalf("expected %v to not be nil", err)
 	}
-	format := fmt.Sprintf("103 to equal 101\ndiff: 103!=101")
+	expect.Expect(t, mockDiffer).To(pers.HaveMethodExecuted("Diff", pers.WithArgs(103, 101)))
+	format := fmt.Sprintf("103 to equal 101\ndiff: this is a valid diff")
 	if err.Error() != format {
 		t.Fatalf("expected '%v' to match '%v'", err.Error(), format)
 	}
