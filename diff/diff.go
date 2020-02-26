@@ -32,15 +32,16 @@ const (
 	Faint
 	Italic
 	Underline
-	CrossedOut
+	Strikethrough
 )
 
 // WithStyle returns an Opt that wraps up differences
 // in a style.
 func WithStyle(s Style) Opt {
 	switch s {
-	case CrossedOut:
-		// We aren't matched 1:1 with fatih/color on this attribute.
+	case Strikethrough:
+		// We aren't matched 1:1 with fatih/color on this attribute,
+		// so we have to translate.
 		return withFatihColor(color.New(color.CrossedOut))
 	default:
 		return withFatihColor(color.New(color.Attribute(s)))
@@ -178,46 +179,23 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 	}
 
 	if av.Kind() != ev.Kind() {
-		return d.genDiff("%T", av.Interface(), ev.Interface())
+		return d.genDiff("%s", av.Type(), ev.Type())
 	}
 
-	switch av.Interface().(type) {
-	case []rune, []byte, string:
-		// we want to find differences in the middle of strings and
-		// string-like types, whenever possible.
-		if av.Len() != ev.Len() {
-			break // let the default logic handle this
+	if av.CanInterface() {
+		switch av.Interface().(type) {
+		case []rune, []byte, string:
+			return d.strDiff(av, ev)
 		}
-
-		strTyp := reflect.TypeOf("")
-		var curra, currb, out string
-		for i := 0; i < av.Len(); i++ {
-			match := av.Index(i).Interface() == ev.Index(i).Interface()
-			if !match {
-				curra += av.Index(i).Convert(strTyp).Interface().(string)
-				currb += ev.Index(i).Convert(strTyp).Interface().(string)
-				continue
-			}
-			if len(curra) > 0 {
-				out += d.genDiff("%s", curra, currb)
-				curra, currb = "", ""
-			}
-			out += av.Index(i).Convert(strTyp).Interface().(string)
-		}
-		if len(curra) > 0 {
-			out += d.genDiff("%s", curra, currb)
-			curra, currb = "", ""
-		}
-		return out
 	}
 
 	switch av.Kind() {
 	case reflect.Ptr, reflect.Interface:
 		return d.diff(av.Elem(), ev.Elem())
-	case reflect.Slice, reflect.Array:
+	case reflect.Slice, reflect.Array, reflect.String:
 		if av.Len() != ev.Len() {
 			// TODO: do a more thorough diff of values
-			return d.genDiff(fmt.Sprintf("%T(len %%d)", av.Interface()), av.Len(), ev.Len())
+			return d.genDiff(fmt.Sprintf("%s(len %%d)", av.Type()), av.Len(), ev.Len())
 		}
 		var elems []string
 		for i := 0; i < av.Len(); i++ {
@@ -253,7 +231,7 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 		var parts []string
 		for i := 0; i < ev.NumField(); i++ {
 			f := ev.Type().Field(i)
-			if f.PkgPath != "" {
+			if f.PkgPath != "" && !f.Anonymous {
 				// unexported
 				continue
 			}
@@ -262,7 +240,7 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 			afv := av.Field(i)
 			parts = append(parts, fmt.Sprintf("%s: %s", name, d.diff(afv, bfv)))
 		}
-		return fmt.Sprintf("%T{", av.Interface()) + strings.Join(parts, ", ") + "}"
+		return fmt.Sprintf("%s{%s}", av.Type(), strings.Join(parts, ", "))
 	default:
 		if av.Type().Comparable() {
 			a, b := av.Interface(), ev.Interface()
@@ -271,6 +249,83 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 			}
 			return fmt.Sprintf("%#v", a)
 		}
-		return d.format(fmt.Sprintf("UNSUPPORTED: could not compare values of type %T", av.Interface()))
+		return d.format(fmt.Sprintf("UNSUPPORTED: could not compare values of type %s", av.Type()))
 	}
+}
+
+// strDiff helps us generate a diff between two strings.
+//
+// TODO: make this maybe less naive?  string diffs are hard.
+func (d *Differ) strDiff(av, ev reflect.Value) string {
+	strTyp := reflect.TypeOf("")
+	var out string
+
+	diffs := smallestDiff(av, ev, 0, 0)
+	i := 0
+	for _, diff := range diffs {
+		out += av.Slice(i, diff.aStart).Convert(strTyp).Interface().(string)
+		curra := av.Slice(diff.aStart, diff.aEnd).Convert(strTyp).Interface().(string)
+		curre := ev.Slice(diff.eStart, diff.eEnd).Convert(strTyp).Interface().(string)
+		out += d.genDiff("%s", curra, curre)
+		i = diff.aEnd
+	}
+	out += av.Slice(i, av.Len()).Convert(strTyp).Interface().(string)
+	return out
+}
+
+type diffs []difference
+
+func (d diffs) cost() int {
+	cost := 0
+	for _, diff := range d {
+		cost += diff.cost()
+	}
+	return cost
+}
+
+type difference struct {
+	aStart, aEnd, eStart, eEnd int
+}
+
+func (d difference) cost() int {
+	return greater(d.aEnd-d.aStart, d.eEnd-d.eStart)
+}
+
+func greater(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func smallestDiff(av, ev reflect.Value, aStart, eStart int) []difference {
+	for aStart < av.Len() && eStart < ev.Len() && av.Index(aStart).Interface() == ev.Index(eStart).Interface() {
+		aStart++
+		eStart++
+	}
+	if aStart == av.Len() && eStart == ev.Len() {
+		return nil
+	}
+
+	shortest := diffs{{aStart: aStart, aEnd: av.Len(), eStart: eStart, eEnd: ev.Len()}}
+	if aStart == av.Len() || eStart == ev.Len() {
+		return shortest
+	}
+	for i := aStart; i < av.Len(); i++ {
+		for j := eStart; j < ev.Len(); j++ {
+			if av.Index(i).Interface() != ev.Index(j).Interface() {
+				continue
+			}
+			currDiffs := append(diffs{{
+				aStart: aStart,
+				aEnd:   i,
+				eStart: eStart,
+				eEnd:   j,
+			}}, smallestDiff(av, ev, i+1, j+1)...)
+			if currDiffs.cost() < shortest.cost() {
+				shortest = currDiffs
+			}
+		}
+	}
+	return shortest
 }
