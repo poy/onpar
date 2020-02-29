@@ -112,3 +112,73 @@ func TestDiff(t *testing.T) {
 		})
 	}
 }
+
+func ExampleDiffer_Diff() {
+	fmt.Println(diff.New().Diff("some string with foo in it", "some string with bar in it"))
+	// Output:
+	// some string with >foo!=bar< in it
+}
+
+func ExampleWithFormat() {
+	style := diff.WithFormat("LOOK-->%s<--!!!")
+	fmt.Println(diff.New(style).Diff("some string with foo in it", "some string with bar in it"))
+	// Output:
+	// some string with LOOK-->foobar<--!!! in it
+}
+
+func ExampleActual() {
+	styles := []diff.Opt{
+		diff.Actual( // styles passed to this will only apply to actual values
+			diff.WithFormat("(%s|"),
+		),
+		diff.Expected( // styles passed to this will only apply to expected values
+			diff.WithFormat("%s)"),
+		),
+	}
+	fmt.Println(diff.New(styles...).Diff("some string with foo in it", "some string with bar in it"))
+	// Output:
+	// some string with (foo|bar) in it
+}
+
+func ExampleWithStyle() {
+	styles := []diff.Opt{
+		diff.Actual(diff.WithStyle(diff.Strikethrough)),
+		diff.Expected(diff.WithStyle(diff.Underline)),
+	}
+	fmt.Println(diff.New(styles...).Diff("some string with foo in it", "some string with bar in it"))
+}
+
+func ExampleWithFGColor() {
+	styles := []diff.Opt{
+		// Since options are applied in the order they're passed in,
+		// we can apply color to the real values but have formatting
+		// around them that uses the default colors.
+		diff.Actual(
+			diff.WithFGColor(diff.Red),
+			diff.WithFormat("(%s|"),
+		),
+		diff.Expected(
+			diff.WithFGColor(diff.Yellow),
+			diff.WithFormat("%s)"),
+		),
+	}
+	fmt.Println(diff.New(styles...).Diff("some string with foo in it", "some string with bar in it"))
+}
+
+func ExampleWithBGColor() {
+	styles := []diff.Opt{
+		// An unfortunate feature of terminal colors: clearing formatting clears
+		// *all* formatting, so we have to apply the background color to each
+		// individual value so that diff.WithFGColor doesn't clear our background
+		// color.
+		diff.Actual(
+			diff.WithBGColor(diff.Red),
+			diff.WithFGColor(diff.Yellow),
+		),
+		diff.Expected(
+			diff.WithBGColor(diff.Red),
+			diff.WithFGColor(diff.Green),
+		),
+	}
+	fmt.Println(diff.New(styles...).Diff("some string with foo in it", "some string with bar in it"))
+}
