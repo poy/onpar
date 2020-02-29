@@ -9,6 +9,10 @@ import (
 )
 
 // Opt is an option type that can be passed to New.
+//
+// Most of the time, you'll want to use at least one
+// of Actual or Expected, to differentiate the two
+// in your output.
 type Opt func(Differ) Differ
 
 // WithFormat returns an Opt that wraps up differences
@@ -130,6 +134,13 @@ type Differ struct {
 //
 // If opts is empty, the default options used will be:
 // [ WithFormat(">%s<"), Actual(WithFormat("%s!=")) ]
+//
+// opts will be applied to the text in the order they
+// are passed in, so you can do things like color a value
+// and then wrap the colored text up in custom formatting.
+//
+// See the examples on the different Opt types for more
+// detail.
 func New(opts ...Opt) *Differ {
 	d := Differ{}
 	if len(opts) == 0 {
