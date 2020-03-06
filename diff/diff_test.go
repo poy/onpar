@@ -6,8 +6,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fatih/color"
+	"github.com/nelsam/hel/pers"
 	"github.com/poy/onpar"
 	"github.com/poy/onpar/diff"
+	"github.com/poy/onpar/expect"
+	"github.com/poy/onpar/matchers"
 )
 
 type testNestedStruct struct {
@@ -111,6 +115,14 @@ func TestDiff(t *testing.T) {
 			}
 		})
 	}
+
+	o.Spec("it calls Sprinters", func(t *testing.T) {
+		s := newMockSprinter()
+		pers.Return(s.SprintOutput, "foo")
+		out := diff.New(diff.WithSprinter(s)).Diff("first", "second")
+		expect.Expect(t, s).To(pers.HaveMethodExecuted("Sprint", pers.WithArgs("firstsecond")))
+		expect.Expect(t, out).To(matchers.Equal("foo"))
+	})
 }
 
 func ExampleDiffer_Diff() {
@@ -140,45 +152,13 @@ func ExampleActual() {
 	// some string with (foo|bar) in it
 }
 
-func ExampleWithStyle() {
+func ExampleWithSprinter_Color() {
+	// WithSprinter is provided for integration with any type
+	// that has an `Sprint(...interface{}) string` method.  Here
+	// we use github.com/fatih/color.
 	styles := []diff.Opt{
-		diff.Actual(diff.WithStyle(diff.Strikethrough)),
-		diff.Expected(diff.WithStyle(diff.Underline)),
-	}
-	fmt.Println(diff.New(styles...).Diff("some string with foo in it", "some string with bar in it"))
-}
-
-func ExampleWithFGColor() {
-	styles := []diff.Opt{
-		// Since options are applied in the order they're passed in,
-		// we can apply color to the real values but have formatting
-		// around them that uses the default colors.
-		diff.Actual(
-			diff.WithFGColor(diff.Red),
-			diff.WithFormat("(%s|"),
-		),
-		diff.Expected(
-			diff.WithFGColor(diff.Yellow),
-			diff.WithFormat("%s)"),
-		),
-	}
-	fmt.Println(diff.New(styles...).Diff("some string with foo in it", "some string with bar in it"))
-}
-
-func ExampleWithBGColor() {
-	styles := []diff.Opt{
-		// An unfortunate feature of terminal colors: clearing formatting clears
-		// *all* formatting, so we have to apply the background color to each
-		// individual value so that diff.WithFGColor doesn't clear our background
-		// color.
-		diff.Actual(
-			diff.WithBGColor(diff.Red),
-			diff.WithFGColor(diff.Yellow),
-		),
-		diff.Expected(
-			diff.WithBGColor(diff.Red),
-			diff.WithFGColor(diff.Green),
-		),
+		diff.Actual(diff.WithSprinter(color.New(color.CrossedOut, color.FgRed))),
+		diff.Expected(diff.WithSprinter(color.New(color.FgYellow))),
 	}
 	fmt.Println(diff.New(styles...).Diff("some string with foo in it", "some string with bar in it"))
 }

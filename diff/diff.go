@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
 // Opt is an option type that can be passed to New.
@@ -27,67 +25,20 @@ func WithFormat(format string) Opt {
 	}
 }
 
-// Style represents display styles (like bold or italic)
-// that we can display text as.
-type Style int
-
-const (
-	Bold Style = 1 + iota
-	Faint
-	Italic
-	Underline
-	Strikethrough
-)
-
-// WithStyle returns an Opt that wraps up differences
-// in a style.
-func WithStyle(s Style) Opt {
-	switch s {
-	case Strikethrough:
-		// We aren't matched 1:1 with fatih/color on this attribute,
-		// so we have to translate.
-		return withFatihColor(color.New(color.CrossedOut))
-	default:
-		return withFatihColor(color.New(color.Attribute(s)))
-	}
+// Sprinter is any type which can print a string.
+type Sprinter interface {
+	Sprint(...interface{}) string
 }
 
-// Color represents colors that we can display text as.
-type Color int
-
-const (
-	Black Color = iota
-	Red
-	Green
-	Yellow
-	Blue
-	Magenta
-	Cyan
-	White
-)
-
-// withFatihColor is a little helper to standardize Opt types
-// that need to wrap up differences using colors from
-// github.com/fatih/color.
-func withFatihColor(c *color.Color) Opt {
+// WithSprinter returns an Opt that wraps up differences
+// using a Sprinter.
+func WithSprinter(s Sprinter) Opt {
 	return func(d Differ) Differ {
 		d.wrappers = append(d.wrappers, func(v string) string {
-			return c.Sprint(v)
+			return s.Sprint(v)
 		})
 		return d
 	}
-}
-
-// WithFGColor returns an Opt that wraps up differences
-// using a foreground color.
-func WithFGColor(c Color) Opt {
-	return withFatihColor(color.New(color.Attribute(c + 30)))
-}
-
-// WithBGColor returns an Opt that wraps up differences
-// using a background color.
-func WithBGColor(c Color) Opt {
-	return withFatihColor(color.New(color.Attribute(c + 40)))
 }
 
 func applyOpts(o *Differ, opts ...Opt) {
