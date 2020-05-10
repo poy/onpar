@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
-	"github.com/nelsam/hel/pers"
+	"github.com/nelsam/hel/v2/pers"
 	"github.com/poy/onpar"
 	"github.com/poy/onpar/diff"
 	"github.com/poy/onpar/expect"
