@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/nelsam/hel/pers"
+	"github.com/nelsam/hel/v2/pers"
 	"github.com/poy/onpar/expect"
 	"github.com/poy/onpar/matchers"
 )
