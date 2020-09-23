@@ -123,6 +123,18 @@ func TestDiff(t *testing.T) {
 		expect.Expect(t, s).To(pers.HaveMethodExecuted("Sprint", pers.WithArgs("firstsecond")))
 		expect.Expect(t, out).To(matchers.Equal("foo"))
 	})
+
+	o.Spec("it does not hang on strings mentioned in issue 30", func(t *testing.T) {
+		out := diff.New().Diff(
+			`{"current":[{"kind":0,"at":{"seconds":1596288863,"nanos":13000000},"msg":"Something bad happened."}]}`,
+			`{"current": [{"kind": "GENERIC", "at": "2020-08-01T13:34:23.013Z", "msg": "Something bad happened."}], "history": []}`,
+		)
+		expect.Expect(t, out).To(matchers.Equal(
+			`{"current":>!= <[{"kind":>0,!= <">at":{"seconds!=GENERIC", ` +
+				`"at<":>1596!= "20<2>88!=0-0<8>63,"nanos"!=-01T13:34<:>1!=2<3>0!=.<0>0000}!=13Z"<,` +
+				`>!= <"msg":>!= <"Something bad happened."}]>!=, "history": []<}`,
+		))
+	})
 }
 
 func ExampleDiffer_Diff() {
