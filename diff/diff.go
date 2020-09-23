@@ -260,10 +260,22 @@ func greater(a, b int) int {
 	return b
 }
 
+type diffIdx struct {
+	aStart, eStart int
+}
+
 func smallestDiff(av, ev reflect.Value, aStart, eStart int) []difference {
+	cache := make(map[diffIdx][]difference)
+	return smallestCachingDiff(cache, av, ev, aStart, eStart)
+}
+
+func smallestCachingDiff(cache map[diffIdx][]difference, av, ev reflect.Value, aStart, eStart int) []difference {
 	for aStart < av.Len() && eStart < ev.Len() && av.Index(aStart).Interface() == ev.Index(eStart).Interface() {
 		aStart++
 		eStart++
+	}
+	if d, ok := cache[diffIdx{aStart: aStart, eStart: eStart}]; ok {
+		return d
 	}
 	if aStart == av.Len() && eStart == ev.Len() {
 		return nil
@@ -283,11 +295,12 @@ func smallestDiff(av, ev reflect.Value, aStart, eStart int) []difference {
 				aEnd:   i,
 				eStart: eStart,
 				eEnd:   j,
-			}}, smallestDiff(av, ev, i+1, j+1)...)
+			}}, smallestCachingDiff(cache, av, ev, i+1, j+1)...)
 			if currDiffs.cost() < shortest.cost() {
 				shortest = currDiffs
 			}
 		}
 	}
+	cache[diffIdx{aStart: aStart, eStart: eStart}] = shortest
 	return shortest
 }
