@@ -2,6 +2,7 @@ package matchers_test
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/poy/onpar/matchers"
@@ -96,6 +97,30 @@ func TestMatchJSON(t *testing.T) {
 
 		if _, err := m.Match(`false`); err == nil {
 			t.Fatalf("expected %v to not be nil", err)
+		}
+	})
+
+	t.Run("match string pointer", func(t *testing.T) {
+		obj := `{"a": 99}`
+		m := matchers.MatchJSON(&obj)
+		v, err := m.Match(obj)
+		if err != nil {
+			t.Errorf("expected %v to be nil", err)
+		}
+
+		if !reflect.DeepEqual(v, obj) {
+			t.Errorf("expected %v to equal %v", v, obj)
+		}
+
+		if _, err := m.Match(`{"different": 99}`); err == nil {
+			t.Fatalf("expected %v to not be nil", err)
+		}
+
+		var nilStr *string
+		_, err = m.Match(nilStr)
+		const expected = "*string cannot be nil"
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("expected error  to contain `%s` but got `%v`", expected, err)
 		}
 	})
 }
