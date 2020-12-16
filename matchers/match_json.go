@@ -54,8 +54,17 @@ func (m MatchJSONMatcher) unmarshal(x interface{}) (interface{}, string, error) 
 		}
 		s = x
 
+	case *string:
+		if x == nil {
+			return nil, "", fmt.Errorf("*string cannot be nil")
+		}
+		s = *x
+		if err := json.Unmarshal([]byte(s), &result); err != nil {
+			return nil, s, err
+		}
+
 	default:
-		return nil, "", fmt.Errorf("must be a []byte or string")
+		return nil, "", fmt.Errorf("must be a []byte, *string, or string")
 	}
 
 	return result, s, nil
