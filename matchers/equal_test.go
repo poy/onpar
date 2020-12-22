@@ -41,7 +41,7 @@ func TestEqualDiff(t *testing.T) {
 		t.Fatalf("expected %v to not be nil", err)
 	}
 	expect.Expect(t, mockDiffer).To(pers.HaveMethodExecuted("Diff", pers.WithArgs(103, 101)))
-	format := fmt.Sprintf("103 to equal 101\ndiff: this is a valid diff")
+	format := fmt.Sprintf("expected 103 to equal 101\ndiff: this is a valid diff")
 	if err.Error() != format {
 		t.Fatalf("expected '%v' to match '%v'", err.Error(), format)
 	}

@@ -27,7 +27,7 @@ func (m EqualMatcher) Match(actual interface{}) (interface{}, error) {
 		if m.differ == nil {
 			return nil, fmt.Errorf("%+v (%[1]T) to equal %+v (%[2]T)", actual, m.expected)
 		}
-		return nil, fmt.Errorf("%v to equal %v\ndiff: %s", actual, m.expected, m.differ.Diff(actual, m.expected))
+		return nil, fmt.Errorf("expected %v to equal %v\ndiff: %s", actual, m.expected, m.differ.Diff(actual, m.expected))
 	}
 
 	return actual, nil
