@@ -134,9 +134,15 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 		if !ev.IsValid() {
 			return "<nil>"
 		}
+		if ev.Kind() == reflect.Ptr {
+			return d.diff(av, ev.Elem())
+		}
 		return d.genDiff("%v", "<nil>", ev.Interface())
 	}
 	if !ev.IsValid() {
+		if av.Kind() == reflect.Ptr {
+			return d.diff(av.Elem(), ev)
+		}
 		return d.genDiff("%v", av.Interface(), "<nil>")
 	}
 

@@ -62,6 +62,18 @@ func TestDiff(t *testing.T) {
 		}
 	})
 
+	o.Spec("it shows the value of pointers when compared against nil", func(t *testing.T) {
+		a := "foo"
+		out := diff.New().Diff(&a, nil)
+		if !strings.Contains(out, "foo") {
+			t.Fatalf("output %s should have contained actual value '%s'", out, a)
+		}
+		out = diff.New().Diff(nil, &a)
+		if !strings.Contains(out, "foo") {
+			t.Fatalf("output %s should have contained expected value '%s'", out, a)
+		}
+	})
+
 	o.Spec("it can handle nil values", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r != nil {
