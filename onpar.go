@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/poy/onpar/diff"
+	"github.com/poy/onpar/v2/diff"
 )
 
 // Opt is an option type to pass to onpar's constructor.

@@ -6,38 +6,38 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/nelsam/hel/pers"
-	. "github.com/poy/onpar/expect"
+	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
+	. "github.com/poy/onpar/v2/expect"
+	"github.com/poy/onpar/v2/matcher"
 )
 
-type diffMatcher struct {
-	mockToMatcher
+type diffMatcher[T any] struct {
+	mockMatcher[T]
 	mockDiffMatcher
 }
 
 func TestToRespectsDifferMatchers(t *testing.T) {
-	mockT := newMockT()
-	d := newMockDiffMatcher()
-	m := newMockToMatcher()
-	mockMatcher := &diffMatcher{
+	mockT := newMockT(t, time.Second)
+	d := newMockDiffMatcher(t, time.Second)
+	m := newMockMatcher[int](t, time.Second)
+	mMatcher := &diffMatcher[int]{
 		mockDiffMatcher: *d,
-		mockToMatcher:   *m,
+		mockMatcher:     *m,
 	}
-	pers.Return(mockMatcher.MatchOutput, nil, nil)
-	mockDiffer := newMockDiffer()
+	pers.Return(mMatcher.MatchOutput, nil)
+	mockDiffer := newMockDiffer(t, time.Second)
 
-	f := New(mockT, WithDiffer(mockDiffer))
-	f(101).To(mockMatcher)
+	Expect(mockT, 101, WithDiffer(mockDiffer)).To(mMatcher)
 
-	Expect(t, mockMatcher).To(pers.HaveMethodExecuted("UseDiffer", pers.WithArgs(mockDiffer)))
+	Expect(t, mMatcher).To(matcher.Reflect[*diffMatcher[int]](pers.HaveMethodExecuted("UseDiffer", pers.WithArgs(mockDiffer))))
 }
 
-func TestToPassesActualToMatcher(t *testing.T) {
-	mockT := newMockT()
-	mockMatcher := newMockToMatcher()
-	close(mockMatcher.MatchOutput.ResultValue)
-	close(mockMatcher.MatchOutput.Err)
+func TestToPassesActualMatcher(t *testing.T) {
+	mockT := newMockT(t, time.Second)
+	mockMatcher := newMockMatcher[int](t, time.Second)
+	pers.Return(mockMatcher.MatchOutput, nil)
 
 	Expect(mockT, 101).To(mockMatcher)
 
@@ -52,10 +52,9 @@ func TestToPassesActualToMatcher(t *testing.T) {
 }
 
 func TestToErrorsIfMatcherFails(t *testing.T) {
-	mockT := newMockT()
-	mockMatcher := newMockToMatcher()
-	close(mockMatcher.MatchOutput.ResultValue)
-	mockMatcher.MatchOutput.Err <- fmt.Errorf("some-error")
+	mockT := newMockT(t, time.Second)
+	mockMatcher := newMockMatcher[int](t, time.Second)
+	pers.Return(mockMatcher.MatchOutput, fmt.Errorf("some-error"))
 
 	Expect(mockT, 101).To(mockMatcher)
 

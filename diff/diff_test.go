@@ -5,13 +5,14 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
+	"time"
 
+	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
 	"github.com/fatih/color"
-	"github.com/nelsam/hel/pers"
-	"github.com/poy/onpar"
-	"github.com/poy/onpar/diff"
-	"github.com/poy/onpar/expect"
-	"github.com/poy/onpar/matchers"
+	"github.com/poy/onpar/v2"
+	"github.com/poy/onpar/v2/diff"
+	"github.com/poy/onpar/v2/expect"
+	"github.com/poy/onpar/v2/matcher"
 )
 
 type testNestedStruct struct {
@@ -129,11 +130,11 @@ func TestDiff(t *testing.T) {
 	}
 
 	o.Spec("it calls Sprinters", func(t *testing.T) {
-		s := newMockSprinter()
+		s := newMockSprinter(t, time.Second)
 		pers.Return(s.SprintOutput, "foo")
 		out := diff.New(diff.WithSprinter(s)).Diff("first", "second")
-		expect.Expect(t, s).To(pers.HaveMethodExecuted("Sprint", pers.WithArgs("firstsecond")))
-		expect.Expect(t, out).To(matchers.Equal("foo"))
+		expect.Expect(t, s).To(matcher.Reflect[*mockSprinter](pers.HaveMethodExecuted("Sprint", pers.WithArgs("firstsecond"))))
+		expect.Expect(t, out).To(matcher.Equal("foo"))
 	})
 
 	o.Spec("it does not hang on strings mentioned in issue 30", func(t *testing.T) {
@@ -141,7 +142,7 @@ func TestDiff(t *testing.T) {
 			`{"current":[{"kind":0,"at":{"seconds":1596288863,"nanos":13000000},"msg":"Something bad happened."}]}`,
 			`{"current": [{"kind": "GENERIC", "at": "2020-08-01T13:34:23.013Z", "msg": "Something bad happened."}], "history": []}`,
 		)
-		expect.Expect(t, out).To(matchers.Equal(
+		expect.Expect(t, out).To(matcher.Equal(
 			`{"current":>!= <[{"kind":>0,!= <">at":{"seconds!=GENERIC", ` +
 				`"at<":>1596!= "20<2>88!=0-0<8>63,"nanos"!=-01T13:34<:>1!=2<3>0!=.<0>0000}!=13Z"<,` +
 				`>!= <"msg":>!= <"Something bad happened."}]>!=, "history": []<}`,

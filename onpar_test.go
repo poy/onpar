@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/poy/onpar"
+	"github.com/poy/onpar/v2"
 )
 
 func TestSingleNestedSpec(t *testing.T) {

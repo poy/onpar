@@ -2,9 +2,10 @@ package async_test
 
 import (
 	"testing"
+	"time"
 
-	. "github.com/poy/onpar/expect"
-	. "github.com/poy/onpar/matchers"
+	. "github.com/poy/onpar/v2/expect"
+	. "github.com/poy/onpar/v2/matcher"
 )
 
 func TestChannel(t *testing.T) {
@@ -15,7 +16,5 @@ func TestChannel(t *testing.T) {
 		}
 	}()
 
-	Expect(t, c).To(ViaPolling(
-		Chain(Receive(), Equal(50)),
-	))
+	Expect(t, c).To(Eventually[chan int, int](Equal(50), EventuallyTimes(100), EventuallyInterval(time.Microsecond)))
 }
