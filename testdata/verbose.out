@@ -1,0 +1,28 @@
+=== RUN   TestNestedStructure
+=== RUN   TestNestedStructure/foo
+=== PAUSE TestNestedStructure/foo
+=== RUN   TestNestedStructure/bar
+=== PAUSE TestNestedStructure/bar
+=== RUN   TestNestedStructure/baz
+=== RUN   TestNestedStructure/baz/foo
+=== PAUSE TestNestedStructure/baz/foo
+=== RUN   TestNestedStructure/baz/bar
+=== RUN   TestNestedStructure/baz/bar/foo
+=== PAUSE TestNestedStructure/baz/bar/foo
+=== CONT  TestNestedStructure/baz/bar/foo
+=== RUN   TestNestedStructure/baz/baz
+=== PAUSE TestNestedStructure/baz/baz
+=== CONT  TestNestedStructure/baz/foo
+=== CONT  TestNestedStructure/baz/baz
+=== CONT  TestNestedStructure/foo
+=== CONT  TestNestedStructure/bar
+--- PASS: TestNestedStructure (0.00s)
+    --- PASS: TestNestedStructure/baz (0.00s)
+        --- PASS: TestNestedStructure/baz/bar (0.00s)
+            --- PASS: TestNestedStructure/baz/bar/foo (0.00s)
+        --- PASS: TestNestedStructure/baz/foo (0.00s)
+        --- PASS: TestNestedStructure/baz/baz (0.00s)
+    --- PASS: TestNestedStructure/foo (0.00s)
+    --- PASS: TestNestedStructure/bar (0.00s)
+PASS
+ok  	github.com/poy/onpar/v2	0.002s

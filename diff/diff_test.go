@@ -5,13 +5,14 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
+	"time"
 
+	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
 	"github.com/fatih/color"
-	"github.com/nelsam/hel/pers"
-	"github.com/poy/onpar"
-	"github.com/poy/onpar/diff"
-	"github.com/poy/onpar/expect"
-	"github.com/poy/onpar/matchers"
+	"github.com/poy/onpar/v2"
+	"github.com/poy/onpar/v2/diff"
+	"github.com/poy/onpar/v2/expect"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 type testNestedStruct struct {
@@ -129,7 +130,7 @@ func TestDiff(t *testing.T) {
 	}
 
 	o.Spec("it calls Sprinters", func(t *testing.T) {
-		s := newMockSprinter()
+		s := newMockSprinter(t, time.Second)
 		pers.Return(s.SprintOutput, "foo")
 		out := diff.New(diff.WithSprinter(s)).Diff("first", "second")
 		expect.Expect(t, s).To(pers.HaveMethodExecuted("Sprint", pers.WithArgs("firstsecond")))
