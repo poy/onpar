@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/poy/onpar/matchers"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 func TestViaPollingFailsPolls100Times(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 
 	callCount := make(chan bool, 200)
@@ -30,7 +30,7 @@ func TestViaPollingFailsPolls100Times(t *testing.T) {
 
 func TestViaPollingPollsEvery10ms(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 
 	var ts []int64
@@ -51,7 +51,7 @@ func TestViaPollingPollsEvery10ms(t *testing.T) {
 
 func TestViaPollingStopsAfterSuccess(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 
 	i := 0
@@ -80,7 +80,7 @@ func TestViaPollingStopsAfterSuccess(t *testing.T) {
 
 func TestViaPollingUsesGivenProperties(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPollingMatcher{
 		Matcher:  matcher,
 		Duration: time.Millisecond,
@@ -103,7 +103,7 @@ func TestViaPollingUsesGivenProperties(t *testing.T) {
 
 func TestViaPollingPassesAlongChan(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 	matcher.MatchOutput.ResultValue <- nil
 	matcher.MatchOutput.Err <- nil
@@ -123,7 +123,7 @@ func TestViaPollingPassesAlongChan(t *testing.T) {
 
 func TestViaPollingFailsForNonChanOrFunc(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 
 	_, err := m.Match(101)
@@ -134,7 +134,7 @@ func TestViaPollingFailsForNonChanOrFunc(t *testing.T) {
 
 func TestViaPollingFailsForFuncWithArgs(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 
 	_, err := m.Match(func(int) int { return 101 })
@@ -145,7 +145,7 @@ func TestViaPollingFailsForFuncWithArgs(t *testing.T) {
 
 func TestViaPollingFailsForFuncWithWrongReturns(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 
 	_, err := m.Match(func() (int, int) { return 101, 103 })
@@ -156,7 +156,7 @@ func TestViaPollingFailsForFuncWithWrongReturns(t *testing.T) {
 
 func TestViaPollingFailsForSendOnlyChan(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 
 	_, err := m.Match(make(chan<- int))
@@ -167,7 +167,7 @@ func TestViaPollingFailsForSendOnlyChan(t *testing.T) {
 
 func TestViaPollingUsesChildMatcherErr(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.ViaPolling(matcher)
 
 	f := func() int {

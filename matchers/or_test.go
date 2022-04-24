@@ -4,22 +4,21 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/poy/onpar/matchers"
+	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 func TestOrFailureUsesEachMatcher(t *testing.T) {
 	t.Parallel()
-	mockMatcherA := newMockMatcher()
-	mockMatcherB := newMockMatcher()
-	mockMatcherC := newMockMatcher()
+	mockMatcherA := newMockMatcher(t, time.Second)
+	mockMatcherB := newMockMatcher(t, time.Second)
+	mockMatcherC := newMockMatcher(t, time.Second)
 
-	mockMatcherA.MatchOutput.ResultValue <- 1
-	mockMatcherB.MatchOutput.ResultValue <- 2
-	mockMatcherC.MatchOutput.ResultValue <- 3
-	mockMatcherA.MatchOutput.Err <- fmt.Errorf("some-error")
-	mockMatcherB.MatchOutput.Err <- fmt.Errorf("some-error")
-	mockMatcherC.MatchOutput.Err <- fmt.Errorf("some-error")
+	pers.Return(mockMatcherA.MatchOutput, 1, fmt.Errorf("some-error"))
+	pers.Return(mockMatcherB.MatchOutput, 2, fmt.Errorf("some-error"))
+	pers.Return(mockMatcherC.MatchOutput, 3, fmt.Errorf("some-error"))
 
 	m := matchers.Or(mockMatcherA, mockMatcherB, mockMatcherC)
 
@@ -47,16 +46,13 @@ func TestOrFailureUsesEachMatcher(t *testing.T) {
 
 func TestOrStopsOnSuccess(t *testing.T) {
 	t.Parallel()
-	mockMatcherA := newMockMatcher()
-	mockMatcherB := newMockMatcher()
-	mockMatcherC := newMockMatcher()
+	mockMatcherA := newMockMatcher(t, time.Second)
+	mockMatcherB := newMockMatcher(t, time.Second)
+	mockMatcherC := newMockMatcher(t, time.Second)
 
-	mockMatcherA.MatchOutput.ResultValue <- 1
-	mockMatcherB.MatchOutput.ResultValue <- 2
-	mockMatcherC.MatchOutput.ResultValue <- 3
-	mockMatcherA.MatchOutput.Err <- fmt.Errorf("some-error")
-	close(mockMatcherB.MatchOutput.Err)
-	close(mockMatcherC.MatchOutput.Err)
+	pers.Return(mockMatcherA.MatchOutput, 1, fmt.Errorf("some-error"))
+	pers.Return(mockMatcherB.MatchOutput, 2, nil)
+	pers.Return(mockMatcherC.MatchOutput, 3, nil)
 
 	m := matchers.Or(mockMatcherA, mockMatcherB, mockMatcherC)
 

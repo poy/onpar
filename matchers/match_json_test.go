@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/poy/onpar/matchers"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 func TestMatchJSON(t *testing.T) {
