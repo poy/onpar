@@ -32,8 +32,7 @@ type testStruct struct {
 }
 
 func TestDiff(t *testing.T) {
-	o := onpar.New()
-	defer o.Run(t)
+	o := onpar.New(t)
 
 	for _, tt := range []struct {
 		name  string

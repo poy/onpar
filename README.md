@@ -34,12 +34,11 @@ write flaky tests.
 
 ## Running
 
-In order for specs to actually run, `o.Run(t)` must be called at the end of a
-test function. Typically, we do this with `defer o.Run(t)` immediately after the
-top level suite is constructed.
-
-`o.Run(t)` should never be called on child suites constructed with
-`BeforeEach()`.
+In order for specs to actually run, the top level call to `onpar.New` will rely
+on `t.Cleanup()`. We use this to ensure that all of the setup/teardown and specs
+have been added to the suite before we run any specs. It seems like `t.Cleanup`
+works perfectly fine for this use case and allows nested `t.Run` calls (and
+`t.Cleanup` calls within those `t.Run` calls).
 
 ### Assertions
 OnPar provides built-in assertion mechanisms using `Expect` statement to make
@@ -67,10 +66,9 @@ func TestSpecs(t *testing.T) {
         b float64
     }
 
-    o := onpar.BeforeEach(onpar.New(), func(t *testing.T) testContext {
+    o := onpar.BeforeEach(onpar.New(t), func(t *testing.T) testContext {
         return testContext{t: t, a: 99, b: 101.0}
     })
-    defer o.Run(t)
 
     o.AfterEach(func(tt testContext) {
             // ...
@@ -98,10 +96,9 @@ func TestGrouping(t *testing.T) {
         b float64
     }
 
-    o := onpar.BeforeEach(onpar.New(), func(t *testing.T) topContext {
+    o := onpar.BeforeEach(onpar.New(t), func(t *testing.T) topContext {
         return topContext{t: t, a: 99, b: 101}
     }
-    defer o.Run(t)
 
     o.Group("some-group", func() {
         type groupContext struct {
@@ -135,13 +132,12 @@ func TestRunOrder(t *testing.T) {
         i int
         s string
     }
-    o := onpar.BeforeEach(onpar.New(), func(t *testing.T) topContext {
+    o := onpar.BeforeEach(onpar.New(t), func(t *testing.T) topContext {
         // Spec "A": Order = 1
         // Spec "B": Order = 1
         // Spec "C": Order = 1
         return t, 99, "foo"
     })
-    defer o.Run(t)
 
     o.AfterEach(func(tt topContext) {
         // Spec "A": Order = 4

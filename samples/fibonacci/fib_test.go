@@ -10,8 +10,7 @@ import (
 )
 
 func TestDifferentInputs(t *testing.T) {
-	o := onpar.New()
-	defer o.Run(t)
+	o := onpar.New(t)
 
 	o.Group("when n is 0", func() {
 		o.Spec("it returns 1", func(t *testing.T) {

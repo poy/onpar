@@ -9,9 +9,8 @@ import (
 
 func TestSingleNestedSpec(t *testing.T) {
 	t.Parallel()
-	o, c := createScaffolding()
+	c := createScaffolding(t)
 
-	t.Run("FakeSpecs", o.Run)
 	objs := chanToSlice(c)
 
 	if len(objs) != 4 {
@@ -34,9 +33,8 @@ func TestSingleNestedSpec(t *testing.T) {
 
 func TestInvokeFirstChildAndPeerSpec(t *testing.T) {
 	t.Parallel()
-	o, c := createScaffolding()
+	c := createScaffolding(t)
 
-	t.Run("FakeSpecs", o.Run)
 	objs := chanToSlice(c)
 
 	objB := findSpec(objs, "DB-B")
@@ -55,9 +53,8 @@ func TestInvokeFirstChildAndPeerSpec(t *testing.T) {
 
 func TestInvokeSecondChildAndPeerSpec(t *testing.T) {
 	t.Parallel()
-	o, c := createScaffolding()
+	c := createScaffolding(t)
 
-	t.Run("FakeSpecs", o.Run)
 	objs := chanToSlice(c)
 
 	objC := findSpec(objs, "DB-C")
@@ -75,24 +72,24 @@ func TestInvokeSecondChildAndPeerSpec(t *testing.T) {
 }
 
 func TestNewWithBeforeEach(t *testing.T) {
-	o := onpar.New()
-
 	c := make(chan string, 100)
 
-	o.Spec("it runs a spec without a beforeeach", func(*testing.T) {
-		c <- "A"
-	})
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o := onpar.New(t)
 
-	b := onpar.BeforeEach(o, func(*testing.T) string {
-		c <- "B-BeforeEach"
-		return "foo"
-	})
+		o.Spec("it runs a spec without a beforeeach", func(*testing.T) {
+			c <- "A"
+		})
 
-	b.Spec("it runs a spec on a BeforeEach", func(string) {
-		c <- "B"
-	})
+		b := onpar.BeforeEach(o, func(*testing.T) string {
+			c <- "B-BeforeEach"
+			return "foo"
+		})
 
-	t.Run("FakeSpecs", o.Run)
+		b.Spec("it runs a spec on a BeforeEach", func(string) {
+			c <- "B"
+		})
+	})
 
 	expected := []string{"A", "B-BeforeEach", "B"}
 	for len(expected) > 0 {
@@ -111,31 +108,31 @@ func TestNewWithBeforeEach(t *testing.T) {
 }
 
 func TestGroupNestsRunCalls(t *testing.T) {
-	o := onpar.New()
-
 	c := make(chan string, 100)
 
-	sendName := func(t *testing.T) {
-		c <- t.Name()
-	}
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o := onpar.New(t)
 
-	o.Spec("A", sendName)
+		sendName := func(t *testing.T) {
+			c <- t.Name()
+		}
 
-	o.Group("B", func() {
-		o.Spec("C", sendName)
+		o.Spec("A", sendName)
 
-		o.Spec("D", sendName)
-	})
+		o.Group("B", func() {
+			o.Spec("C", sendName)
 
-	o.Spec("E", sendName)
+			o.Spec("D", sendName)
+		})
 
-	o.Group("F", func() {
-		o.Group("G", func() {
-			o.Spec("H", sendName)
+		o.Spec("E", sendName)
+
+		o.Group("F", func() {
+			o.Group("G", func() {
+				o.Spec("H", sendName)
+			})
 		})
 	})
-
-	t.Run("FakeSpecs", o.Run)
 
 	expected := []string{
 		"TestGroupNestsRunCalls/FakeSpecs/A",
@@ -167,72 +164,29 @@ func TestGroupNestsRunCalls(t *testing.T) {
 	}
 }
 
-func createScaffolding() (*onpar.Onpar[*testing.T, mockTest], <-chan *testObject) {
+func createScaffolding(t *testing.T) <-chan *testObject {
 	objs := make(chan *testObject, 100)
 
-	o := onpar.BeforeEach(onpar.New(), func(t *testing.T) mockTest {
-		obj := NewTestObject()
-		obj.Use("-BeforeEach")
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o := onpar.BeforeEach(onpar.New(t), func(t *testing.T) mockTest {
+			obj := NewTestObject()
+			obj.Use("-BeforeEach")
 
-		objs <- obj
+			objs <- obj
 
-		return mockTest{t, 99, "something", obj}
-	})
-
-	o.AfterEach(func(tt mockTest) {
-		tt.o.Use("-AfterEach")
-	})
-
-	o.Group("DA", func() {
-		o := onpar.BeforeEach(o, func(tt mockTest) mockTest {
-			return tt
+			return mockTest{t, 99, "something", obj}
 		})
 
 		o.AfterEach(func(tt mockTest) {
-			if tt.i != 99 {
-				tt.t.Fatalf("expected %d = %d", tt.i, 99)
-			}
-
-			if tt.s != "something" {
-				tt.t.Fatalf("expected %s = %s", tt.s, "something")
-			}
-
-			tt.o.Use("DA-AfterEach")
-			tt.o.Close()
+			tt.o.Use("-AfterEach")
 		})
 
-		o.Spec("A", func(tt mockTest) {
-			if tt.i != 99 {
-				tt.t.Fatalf("expected %d = %d", tt.i, 99)
-			}
-
-			if tt.s != "something" {
-				tt.t.Fatalf("expected %s = %s", tt.s, "something")
-			}
-
-			tt.o.Use("DA-A")
-		})
-
-		o.Group("DB", func() {
-			type subMockTest struct {
-				t *testing.T
-				i int
-				s string
-				o *testObject
-				f float64
-			}
-
-			o := onpar.BeforeEach(o, func(tt mockTest) subMockTest {
-				tt.o.Use("DB-BeforeEach")
-				return subMockTest{t: tt.t, i: tt.i, s: tt.s, o: tt.o, f: 101}
+		o.Group("DA", func() {
+			o := onpar.BeforeEach(o, func(tt mockTest) mockTest {
+				return tt
 			})
 
-			o.AfterEach(func(tt subMockTest) {
-				tt.o.Use("DB-AfterEach")
-			})
-
-			o.Spec("B", func(tt subMockTest) {
-				tt.o.Use("DB-B")
+			o.AfterEach(func(tt mockTest) {
 				if tt.i != 99 {
 					tt.t.Fatalf("expected %d = %d", tt.i, 99)
 				}
@@ -241,13 +195,11 @@ func createScaffolding() (*onpar.Onpar[*testing.T, mockTest], <-chan *testObject
 					tt.t.Fatalf("expected %s = %s", tt.s, "something")
 				}
 
-				if tt.f != 101 {
-					tt.t.Fatalf("expected %f = %f", tt.f, 101.0)
-				}
+				tt.o.Use("DA-AfterEach")
+				tt.o.Close()
 			})
 
-			o.Spec("C", func(tt subMockTest) {
-				tt.o.Use("DB-C")
+			o.Spec("A", func(tt mockTest) {
 				if tt.i != 99 {
 					tt.t.Fatalf("expected %d = %d", tt.i, 99)
 				}
@@ -256,37 +208,84 @@ func createScaffolding() (*onpar.Onpar[*testing.T, mockTest], <-chan *testObject
 					tt.t.Fatalf("expected %s = %s", tt.s, "something")
 				}
 
-				if tt.f != 101 {
-					tt.t.Fatalf("expected %f = %f", tt.f, 101.0)
-				}
+				tt.o.Use("DA-A")
 			})
 
-			o.Group("DDD", func() {
-				type subSubMockTest struct {
-					o *testObject
-					i int
+			o.Group("DB", func() {
+				type subMockTest struct {
 					t *testing.T
+					i int
+					s string
+					o *testObject
+					f float64
 				}
-				o := onpar.BeforeEach(o, func(tt subMockTest) subSubMockTest {
-					tt.o.Use("DDD-BeforeEach")
-					return subSubMockTest{o: tt.o, i: tt.i, t: tt.t}
+
+				o := onpar.BeforeEach(o, func(tt mockTest) subMockTest {
+					tt.o.Use("DB-BeforeEach")
+					return subMockTest{t: tt.t, i: tt.i, s: tt.s, o: tt.o, f: 101}
 				})
 
-				o.AfterEach(func(tt subSubMockTest) {
-					tt.o.Use("DDD-AfterEach")
+				o.AfterEach(func(tt subMockTest) {
+					tt.o.Use("DB-AfterEach")
 				})
 
-				o.Spec("E", func(tt subSubMockTest) {
-					tt.o.Use("DDD-E")
+				o.Spec("B", func(tt subMockTest) {
+					tt.o.Use("DB-B")
 					if tt.i != 99 {
 						tt.t.Fatalf("expected %d = %d", tt.i, 99)
 					}
+
+					if tt.s != "something" {
+						tt.t.Fatalf("expected %s = %s", tt.s, "something")
+					}
+
+					if tt.f != 101 {
+						tt.t.Fatalf("expected %f = %f", tt.f, 101.0)
+					}
+				})
+
+				o.Spec("C", func(tt subMockTest) {
+					tt.o.Use("DB-C")
+					if tt.i != 99 {
+						tt.t.Fatalf("expected %d = %d", tt.i, 99)
+					}
+
+					if tt.s != "something" {
+						tt.t.Fatalf("expected %s = %s", tt.s, "something")
+					}
+
+					if tt.f != 101 {
+						tt.t.Fatalf("expected %f = %f", tt.f, 101.0)
+					}
+				})
+
+				o.Group("DDD", func() {
+					type subSubMockTest struct {
+						o *testObject
+						i int
+						t *testing.T
+					}
+					o := onpar.BeforeEach(o, func(tt subMockTest) subSubMockTest {
+						tt.o.Use("DDD-BeforeEach")
+						return subSubMockTest{o: tt.o, i: tt.i, t: tt.t}
+					})
+
+					o.AfterEach(func(tt subSubMockTest) {
+						tt.o.Use("DDD-AfterEach")
+					})
+
+					o.Spec("E", func(tt subSubMockTest) {
+						tt.o.Use("DDD-E")
+						if tt.i != 99 {
+							tt.t.Fatalf("expected %d = %d", tt.i, 99)
+						}
+					})
 				})
 			})
 		})
 	})
 
-	return o, objs
+	return objs
 }
 
 func chanToSlice(c <-chan *testObject) []*testObject {

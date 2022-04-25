@@ -15,7 +15,7 @@ type prefs struct {
 // Opt is an option type to pass to onpar's constructor.
 type Opt func(prefs) prefs
 
-type specer[T any] interface {
+type suite[T any] interface {
 	addRunner(runner[T])
 }
 
@@ -27,7 +27,7 @@ type child interface {
 type Onpar[T, U any] struct {
 	path []string
 
-	parent specer[T]
+	parent suite[T]
 
 	// level is handled by (*Onpar[T]).Group(), which will adjust this field
 	// each time it is called. This is how specs get the level name added to
@@ -48,11 +48,14 @@ type Onpar[T, U any] struct {
 	diffOpts []diff.Opt
 }
 
-// New creates a new Onpar suite.  This generally should be the top-level call.
+// New creates a new Onpar suite. The top-level onpar suite must be constructed
+// with this. Think `context.Background()`.
 //
-// If you need a BeforeEach at the top level, use o := BeforeEach(New(),
-// setupFn).
-func New(opts ...Opt) *Onpar[*testing.T, *testing.T] {
+// It's normal to construct the top-level suite with a BeforeEach by doing the
+// following:
+//
+//     o := BeforeEach(New(t), setupFn)
+func New(t *testing.T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 	p := prefs{}
 	for _, opt := range opts {
 		p = opt(p)
@@ -64,12 +67,17 @@ func New(opts ...Opt) *Onpar[*testing.T, *testing.T] {
 			},
 		},
 	}
+	t.Cleanup(func() {
+		o.run(t)
+	})
 	return &o
 }
 
-// BeforeEach creates a new nested Onpar suite with the requested function as
-// the setup function for all tests created with the new Onpar. It requires a
-// parent Onpar.
+// BeforeEach creates a new child Onpar suite with the requested function as the
+// setup function for all specs. It requires a parent Onpar.
+//
+// The top level Onpar *must* have been constructed with New, otherwise the
+// suite will not run.
 //
 // BeforeEach should be called only once for each level (i.e. each group). It
 // will panic if it detects that it is overwriting another BeforeEach call for a
@@ -82,8 +90,8 @@ func BeforeEach[T, U, V any](parent *Onpar[T, U], setup func(U) V) *Onpar[U, V] 
 		panic(fmt.Errorf("onpar: BeforeEach was called more than once for group '%s'", path.Join(parent.childPath...)))
 	}
 	path := parent.path
-	if parent.level.levelName != "" {
-		path = append(parent.path, parent.level.levelName)
+	if parent.level.name() != "" {
+		path = append(parent.path, parent.level.name())
 	}
 	child := &Onpar[U, V]{
 		path:   path,
@@ -148,9 +156,7 @@ func (o *Onpar[T, U]) AfterEach(f func(U)) {
 	o.level.after = f
 }
 
-// Run is used to initiate the tests. Run panics if type T (from o's type
-// parameters) is not *testing.T.
-func (o *Onpar[T, U]) Run(t *testing.T) {
+func (o *Onpar[T, U]) run(t *testing.T) {
 	if o.child != nil {
 		// This happens when New is called before BeforeEach, e.g.:
 		//
