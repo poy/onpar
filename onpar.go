@@ -85,7 +85,7 @@ func New(t *testing.T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 // given level.
 func BeforeEach[T, U, V any](parent *Onpar[T, U], setup func(U) V) *Onpar[U, V] {
 	if !parent.correctGroup() {
-		panic(fmt.Errorf("onpar: BeforeEach called on child suite outside of its group (%v)", path.Join(parent.path...)))
+		panic(fmt.Errorf("onpar: BeforeEach called with parent suite outside of its group (%v)", path.Join(parent.path...)))
 	}
 	if parent.child() != nil {
 		if len(parent.childPath) == 0 {
@@ -202,8 +202,11 @@ func (o *Onpar[T, U]) run(t *testing.T) {
 	}
 	top, ok := interface{}(o.level).(runner[*testing.T])
 	if !ok {
+		// This should be impossible - the only place that `run` is called is in
+		// `New()`, which is only capable of returning `*Onpar[*testing.T,
+		// *testing.T]`.
 		var empty T
-		panic(fmt.Errorf("onpar: Run was called on a child level (type '%T' is not *testing.T)", empty))
+		panic(fmt.Errorf("onpar: run was called on a child level (type '%T' is not *testing.T)", empty))
 	}
 	top.runSpecs(t, func(t *testing.T) *testing.T {
 		return t
