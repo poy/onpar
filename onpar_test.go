@@ -164,6 +164,58 @@ func TestGroupNestsRunCalls(t *testing.T) {
 	}
 }
 
+func TestSerialSpecsAreOrdered(t *testing.T) {
+	c := make(chan string, 100)
+
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o := onpar.New(t)
+
+		sendName := func(t *testing.T) {
+			c <- t.Name()
+		}
+
+		o.SerialSpec("A", sendName)
+
+		o.Group("B", func() {
+			o.SerialSpec("C", sendName)
+
+			o.SerialSpec("D", sendName)
+		})
+
+		o.SerialSpec("E", sendName)
+
+		o.Group("F", func() {
+			o.Group("G", func() {
+				o.SerialSpec("H", sendName)
+			})
+		})
+	})
+	close(c)
+
+	expected := []string{
+		"TestSerialSpecsAreOrdered/FakeSpecs/A",
+		"TestSerialSpecsAreOrdered/FakeSpecs/B/C",
+		"TestSerialSpecsAreOrdered/FakeSpecs/B/D",
+		"TestSerialSpecsAreOrdered/FakeSpecs/E",
+		"TestSerialSpecsAreOrdered/FakeSpecs/F/G/H",
+	}
+
+	i := 0
+	for v := range c {
+		if i >= len(expected) {
+			t.Fatalf("only expected %d specs, but there are %d unexpected extra calls", len(expected), len(c))
+		}
+		thisExp := expected[i]
+		if v != thisExp {
+			t.Fatalf("expected run %d to be '%v'; got '%v'", i, thisExp, v)
+		}
+		i++
+	}
+	if i < len(expected) {
+		t.Fatalf("expected %d specs, but there were only %d calls", len(expected), i)
+	}
+}
+
 func createScaffolding(t *testing.T) <-chan *testObject {
 	objs := make(chan *testObject, 100)
 

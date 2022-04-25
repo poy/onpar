@@ -107,11 +107,25 @@ func BeforeEach[T, U, V any](parent *Onpar[T, U], setup func(U) V) *Onpar[U, V] 
 
 // Spec is a test that runs in parallel with other specs.
 func (o *Onpar[T, U]) Spec(name string, f func(U)) {
-	spec := specInfo[U]{
+	spec := concurrentSpec[U]{
+		serialSpec: serialSpec[U]{
+			specName: name,
+			f:        f,
+		},
+	}
+	o.addRunner(spec)
+}
+
+// SerialSpec is a test that runs synchronously (i.e. onpar will not call
+// `t.Parallel`). While onpar is primarily a parallel testing suite, we
+// recognize that sometimes a test just can't be run in parallel. When that is
+// the case, use SerialSpec.
+func (o *Onpar[T, U]) SerialSpec(name string, f func(U)) {
+	spec := serialSpec[U]{
 		specName: name,
 		f:        f,
 	}
-	o.level.runners = append(o.level.runners, spec)
+	o.addRunner(spec)
 }
 
 func (o *Onpar[T, U]) addRunner(r runner[U]) {
@@ -191,18 +205,26 @@ type runner[T any] interface {
 	runSpecs(t *testing.T, before func(*testing.T) T, after func(T))
 }
 
-type specInfo[T any] struct {
+type concurrentSpec[T any] struct {
+	serialSpec[T]
+}
+
+func (s concurrentSpec[T]) runSpecs(t *testing.T, before func(*testing.T) T, after func(T)) {
+	t.Parallel()
+
+	s.serialSpec.runSpecs(t, before, after)
+}
+
+type serialSpec[T any] struct {
 	specName string
 	f        func(T)
 }
 
-func (s specInfo[T]) name() string {
+func (s serialSpec[T]) name() string {
 	return s.specName
 }
 
-func (s specInfo[T]) runSpecs(t *testing.T, before func(*testing.T) T, after func(T)) {
-	t.Parallel()
-
+func (s serialSpec[T]) runSpecs(t *testing.T, before func(*testing.T) T, after func(T)) {
 	v := before(t)
 	s.f(v)
 	if after != nil {

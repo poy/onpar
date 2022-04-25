@@ -34,11 +34,10 @@ write flaky tests.
 
 ## Running
 
-In order for specs to actually run, the top level call to `onpar.New` will rely
-on `t.Cleanup()`. We use this to ensure that all of the setup/teardown and specs
-have been added to the suite before we run any specs. It seems like `t.Cleanup`
-works perfectly fine for this use case and allows nested `t.Run` calls (and
-`t.Cleanup` calls within those `t.Run` calls).
+Previous versions of onpar would require the caller to `defer o.Run(t)`. This is
+no longer necessary. the `New` constructor takes care of that now, relying on
+`t.Cleanup()` to ensure that `run` is only called after all of the specs and
+setup/teardown have been defined.
 
 ### Assertions
 OnPar provides built-in assertion mechanisms using `Expect` statement to make
@@ -49,6 +48,7 @@ matchers that come with OnPar.
 - [Matchers](matchers/README.md)
 
 ### Specs
+
 Test assertions are done within a `Spec()` function. Each `Spec` has a name and
 a function with a single argument. The type of the argument is determined by how
 the suite was constructed: `New()` returns a suite that takes a `*testing.T`,
@@ -82,7 +82,19 @@ func TestSpecs(t *testing.T) {
 }
 ```
 
+### Serial Specs
+
+While `onpar` is intended to heavily encourage running specs in parallel, we
+recognize that that's not always an option. Sometimes proper mocking is just too
+time consuming, or a singleton package is just too hard to replace with
+something better.
+
+For those times that you just can't get around the need for serial tests, we
+provide `SerialSpec`. It works exactly the same as `Spec`, except that onpar
+doesn't call `t.Parallel` before running it.
+
 ### Grouping
+
 `Group`s are used to keep `Spec`s in logical place. The intention is to gather
 each `Spec` in a reasonable place. Each `Group` may construct a new child suite
 using `BeforeEach`.
@@ -121,6 +133,7 @@ func TestGrouping(t *testing.T) {
 ```
 
 ### Run Order
+
 Each `BeforeEach()` runs before any `Spec` in the same `Group`. It will also run
 before any sub-group `Spec`s and their `BeforeEach`es. Any `AfterEach()` will
 run after the `Spec` and before parent `AfterEach`es.
@@ -195,6 +208,7 @@ func TestRunOrder(t *testing.T) {
 ```
 
 ## Avoiding Closure
+
 Why bother with returning values from a `BeforeEach`? To avoid closure of
 course! When running `Spec`s in parallel (which they always do), each variable
 needs a new instance to avoid race conditions. If you use closure, then this
