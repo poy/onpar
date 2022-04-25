@@ -31,10 +31,13 @@ type Onpar[T, U any] struct {
 	parent suite[T]
 
 	// level is handled by (*Onpar[T]).Group(), which will adjust this field
-	// each time it is called. This is how specs get the level name added to
-	// their names and how BeforeEach knows which level it is creating a new
-	// sub-suite for.
+	// each time it is called. This is how onpar knows to create nested `t.Run`
+	// calls.
 	level *level[T, U]
+
+	// canBeforeEach controls which contexts BeforeEach is allowed to take this
+	// suite as a parent suite.
+	canBeforeEach bool
 
 	// childSuite is assigned by BeforeEach and removed at the end of Group. If
 	// BeforeEach is called twice in the same Group (or twice at the top level),
@@ -62,6 +65,7 @@ func New(t *testing.T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 		p = opt(p)
 	}
 	o := Onpar[*testing.T, *testing.T]{
+		canBeforeEach: true,
 		level: &level[*testing.T, *testing.T]{
 			before: func(t *testing.T) *testing.T {
 				return t
@@ -84,8 +88,11 @@ func New(t *testing.T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 // will panic if it detects that it is overwriting another BeforeEach call for a
 // given level.
 func BeforeEach[T, U, V any](parent *Onpar[T, U], setup func(U) V) *Onpar[U, V] {
+	if !parent.canBeforeEach {
+		panic(fmt.Errorf("onpar: BeforeEach called with invalid parent: parent must either be a top-level suite or be used inside of a `parent.Group()` call"))
+	}
 	if !parent.correctGroup() {
-		panic(fmt.Errorf("onpar: BeforeEach called with parent suite outside of its group (%v)", path.Join(parent.path...)))
+		panic(fmt.Errorf("onpar: BeforeEach called with invalid parent: parent suite can only be used inside of its group (%v), but the group has exited", path.Join(parent.path...)))
 	}
 	if parent.child() != nil {
 		if len(parent.childPath) == 0 {
@@ -152,7 +159,9 @@ func (o *Onpar[T, U]) Group(name string, f func()) {
 	o.level = &level[T, U]{
 		levelName: name,
 	}
+	o.canBeforeEach = true
 	defer func() {
+		o.canBeforeEach = false
 		if o.child() != nil {
 			o.child().addSpecs()
 			o.childSuite = nil

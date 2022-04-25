@@ -247,6 +247,32 @@ func TestUsingSuiteOutsideGroupPanics(t *testing.T) {
 	}
 }
 
+func TestUsingParentWithoutGroupPanics(t *testing.T) {
+	var r interface{}
+
+	t.Run("FakeSpecs", func(t *testing.T) {
+		defer func() {
+			r = recover()
+		}()
+
+		o := onpar.New(t)
+
+		o.Group("foo", func() {
+			b := onpar.BeforeEach(o, func(t *testing.T) string {
+				return "foo"
+			})
+
+			onpar.BeforeEach(b, func(string) int {
+				return 1
+			})
+		})
+	})
+
+	if r == nil {
+		t.Fatalf("expected creating a child suite on a parent without a group to panic")
+	}
+}
+
 func createScaffolding(t *testing.T) <-chan *testObject {
 	objs := make(chan *testObject, 100)
 
