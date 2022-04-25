@@ -118,7 +118,7 @@ func TestGrouping(t *testing.T) {
             s string
         }
         o := onpar.BeforeEach(o, func(tt topContext) groupContext {
-            return groupContext{t: t, s: "foo"}
+            return groupContext{t: tt.t, s: "foo"}
         })
 
         o.AfterEach(func(tt groupContext) {
@@ -177,7 +177,7 @@ func TestRunOrder(t *testing.T) {
             o.BeforeEach(func(tt topContext) dbContext {
                 // Spec "B": Order = 2
                 // Spec "C": Order = 2
-                return dbContext{t: t, f: 101}
+                return dbContext{t: tt.t, f: 101}
             })
 
             o.AfterEach(func(tt dbContext) {
