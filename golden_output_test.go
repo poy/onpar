@@ -14,8 +14,7 @@ func TestNestedStructure(t *testing.T) {
 	// unit-like tests that assert on these things too, but they can only really
 	// test that the test names use the expected paths. They cannot prove that
 	// each group has its own t.Run.
-	top := onpar.New()
-	defer top.Run(t)
+	top := onpar.New(t)
 
 	top.Spec("foo", func(*testing.T) {})
 
