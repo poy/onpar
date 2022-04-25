@@ -17,6 +17,7 @@ type Opt func(prefs) prefs
 
 type suite[T any] interface {
 	addRunner(runner[T])
+	child() child
 }
 
 type child interface {
@@ -35,14 +36,14 @@ type Onpar[T, U any] struct {
 	// sub-suite for.
 	level *level[T, U]
 
-	// child is assigned by BeforeEach and removed at the end of Group. If
+	// childSuite is assigned by BeforeEach and removed at the end of Group. If
 	// BeforeEach is called twice in the same Group (or twice at the top level),
 	// this is how it knows to panic.
 	//
-	// At the end of Group calls, child.addSpecs is called, which will sync the
-	// child's specs to the parent.
-	child     child
-	childPath []string
+	// At the end of Group calls, childSuite.addSpecs is called, which will sync the
+	// childSuite's specs to the parent.
+	childSuite child
+	childPath  []string
 
 	// TODO: why are these here, again?
 	diffOpts []diff.Opt
@@ -83,7 +84,10 @@ func New(t *testing.T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 // will panic if it detects that it is overwriting another BeforeEach call for a
 // given level.
 func BeforeEach[T, U, V any](parent *Onpar[T, U], setup func(U) V) *Onpar[U, V] {
-	if parent.child != nil {
+	if !parent.correctGroup() {
+		panic(fmt.Errorf("onpar: BeforeEach called on child suite outside of its group (%v)", path.Join(parent.path...)))
+	}
+	if parent.child() != nil {
 		if len(parent.childPath) == 0 {
 			panic(errors.New("onpar: BeforeEach was called more than once at the top level"))
 		}
@@ -100,13 +104,16 @@ func BeforeEach[T, U, V any](parent *Onpar[T, U], setup func(U) V) *Onpar[U, V] 
 			before: setup,
 		},
 	}
-	parent.child = child
+	parent.childSuite = child
 	parent.childPath = child.path
 	return child
 }
 
 // Spec is a test that runs in parallel with other specs.
 func (o *Onpar[T, U]) Spec(name string, f func(U)) {
+	if !o.correctGroup() {
+		panic(fmt.Errorf("onpar: Spec called on child suite outside of its group (%v)", path.Join(o.path...)))
+	}
 	spec := concurrentSpec[U]{
 		serialSpec: serialSpec[U]{
 			specName: name,
@@ -121,6 +128,9 @@ func (o *Onpar[T, U]) Spec(name string, f func(U)) {
 // recognize that sometimes a test just can't be run in parallel. When that is
 // the case, use SerialSpec.
 func (o *Onpar[T, U]) SerialSpec(name string, f func(U)) {
+	if !o.correctGroup() {
+		panic(fmt.Errorf("onpar: SerialSpec called on child suite outside of its group (%v)", path.Join(o.path...)))
+	}
 	spec := serialSpec[U]{
 		specName: name,
 		f:        f,
@@ -135,14 +145,17 @@ func (o *Onpar[T, U]) addRunner(r runner[U]) {
 // Group is used to gather and categorize specs. Inside of each group, a new
 // child *Onpar may be constructed using BeforeEach.
 func (o *Onpar[T, U]) Group(name string, f func()) {
+	if !o.correctGroup() {
+		panic(fmt.Errorf("onpar: Group called on child suite outside of its group (%v)", path.Join(o.path...)))
+	}
 	oldLevel := o.level
 	o.level = &level[T, U]{
 		levelName: name,
 	}
 	defer func() {
-		if o.child != nil {
-			o.child.addSpecs()
-			o.child = nil
+		if o.child() != nil {
+			o.child().addSpecs()
+			o.childSuite = nil
 		}
 		oldLevel.runners = append(oldLevel.runners,
 			&level[U, U]{
@@ -161,6 +174,9 @@ func (o *Onpar[T, U]) Group(name string, f func()) {
 // AfterEach is used to cleanup anything from the specs or BeforeEaches.
 // AfterEach may only be called once for each *Onpar value constructed.
 func (o *Onpar[T, U]) AfterEach(f func(U)) {
+	if !o.correctGroup() {
+		panic(fmt.Errorf("onpar: AfterEach called on child suite outside of its group (%v)", path.Join(o.path...)))
+	}
 	if o.level.after != nil {
 		if len(o.childPath) == 0 {
 			panic(errors.New("onpar: AfterEach was called more than once at top level"))
@@ -171,7 +187,7 @@ func (o *Onpar[T, U]) AfterEach(f func(U)) {
 }
 
 func (o *Onpar[T, U]) run(t *testing.T) {
-	if o.child != nil {
+	if o.child() != nil {
 		// This happens when New is called before BeforeEach, e.g.:
 		//
 		//     o := onpar.New()
@@ -181,8 +197,8 @@ func (o *Onpar[T, U]) run(t *testing.T) {
 		//
 		// Since there's no call to o.Group, the child won't be synced, so we
 		// need to do that here.
-		o.child.addSpecs()
-		o.child = nil
+		o.child().addSpecs()
+		o.childSuite = nil
 	}
 	top, ok := interface{}(o.level).(runner[*testing.T])
 	if !ok {
@@ -192,6 +208,20 @@ func (o *Onpar[T, U]) run(t *testing.T) {
 	top.runSpecs(t, func(t *testing.T) *testing.T {
 		return t
 	}, nil)
+}
+
+func (o *Onpar[T, U]) child() child {
+	return o.childSuite
+}
+
+func (o *Onpar[T, U]) correctGroup() bool {
+	if o.parent == nil {
+		return true
+	}
+	if o.parent.child() == o {
+		return true
+	}
+	return false
 }
 
 // addSpecs is called by parent Group() calls to tell o to add its specs to its

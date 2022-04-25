@@ -216,6 +216,37 @@ func TestSerialSpecsAreOrdered(t *testing.T) {
 	}
 }
 
+func TestUsingSuiteOutsideGroupPanics(t *testing.T) {
+	var r interface{}
+
+	t.Run("FakeSpecs", func(t *testing.T) {
+		defer func() {
+			r = recover()
+		}()
+
+		o := onpar.New(t)
+
+		o.Group("foo", func() {
+			// The most likely scenario for a suite accidentally being used
+			// outside of its group is if it is reassigned to o. This seems
+			// unlikely, since the types usually won't match (the setup
+			// function's parameter and return types have to exactly match the
+			// parent suite's) - but it's worth ensuring that this panics.
+			o = onpar.BeforeEach(o, func(t *testing.T) *testing.T {
+				return t
+			})
+
+			o.Spec("bar", func(*testing.T) {})
+		})
+
+		o.Spec("baz", func(*testing.T) {})
+	})
+
+	if r == nil {
+		t.Fatalf("expected adding a spec to a *OnPar value outside of its group to panic")
+	}
+}
+
 func createScaffolding(t *testing.T) <-chan *testObject {
 	objs := make(chan *testObject, 100)
 
