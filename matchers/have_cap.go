@@ -18,7 +18,7 @@ func HaveCap(expected int) HaveCapMatcher {
 	}
 }
 
-func (m HaveCapMatcher) Match(actual interface{}) (interface{}, error) {
+func (m HaveCapMatcher) Match(actual any) (any, error) {
 	var c int
 	switch reflect.TypeOf(actual).Kind() {
 	case reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:

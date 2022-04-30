@@ -16,7 +16,7 @@ type mockSprinter struct {
 	timeout      time.Duration
 	SprintCalled chan bool
 	SprintInput  struct {
-		Arg0 chan []interface{}
+		Arg0 chan []any
 	}
 	SprintOutput struct {
 		Ret0 chan string
@@ -26,11 +26,11 @@ type mockSprinter struct {
 func newMockSprinter(t vegr.T, timeout time.Duration) *mockSprinter {
 	m := &mockSprinter{t: t, timeout: timeout}
 	m.SprintCalled = make(chan bool, 100)
-	m.SprintInput.Arg0 = make(chan []interface{}, 100)
+	m.SprintInput.Arg0 = make(chan []any, 100)
 	m.SprintOutput.Ret0 = make(chan string, 100)
 	return m
 }
-func (m *mockSprinter) Sprint(arg0 ...interface{}) (ret0 string) {
+func (m *mockSprinter) Sprint(arg0 ...any) (ret0 string) {
 	m.t.Helper()
 	m.SprintCalled <- true
 	m.SprintInput.Arg0 <- arg0

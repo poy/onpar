@@ -18,7 +18,7 @@ func HaveLen(expected int) HaveLenMatcher {
 	}
 }
 
-func (m HaveLenMatcher) Match(actual interface{}) (interface{}, error) {
+func (m HaveLenMatcher) Match(actual any) (any, error) {
 	var l int
 	switch reflect.TypeOf(actual).Kind() {
 	case reflect.Slice, reflect.Array, reflect.Map, reflect.String, reflect.Chan:

@@ -36,7 +36,7 @@ func TestDiff(t *testing.T) {
 
 	for _, tt := range []struct {
 		name  string
-		value interface{}
+		value any
 	}{
 		{"string", "this is a string"},
 		{"int", 21},
@@ -100,7 +100,7 @@ func TestDiff(t *testing.T) {
 
 	for _, tt := range []struct {
 		name     string
-		a, b     interface{}
+		a, b     any
 		expected string
 	}{
 		{"different strings", "foo", "bar", ">foo!=bar<"},
@@ -178,7 +178,7 @@ func ExampleActual() {
 
 func ExampleWithSprinter_Color() {
 	// WithSprinter is provided for integration with any type
-	// that has an `Sprint(...interface{}) string` method.  Here
+	// that has an `Sprint(...any) string` method.  Here
 	// we use github.com/fatih/color.
 	styles := []diff.Opt{
 		diff.Actual(diff.WithSprinter(color.New(color.CrossedOut, color.FgRed))),

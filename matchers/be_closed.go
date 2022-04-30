@@ -15,7 +15,7 @@ func BeClosed() BeClosedMatcher {
 	return BeClosedMatcher{}
 }
 
-func (m BeClosedMatcher) Match(actual interface{}) (interface{}, error) {
+func (m BeClosedMatcher) Match(actual any) (any, error) {
 	t := reflect.TypeOf(actual)
 	if t.Kind() != reflect.Chan || t.ChanDir() == reflect.SendDir {
 		return nil, fmt.Errorf("%s is not a readable channel", t.String())

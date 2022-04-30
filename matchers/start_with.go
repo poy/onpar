@@ -18,7 +18,7 @@ func StartWith(prefix string) StartWithMatcher {
 	}
 }
 
-func (m StartWithMatcher) Match(actual interface{}) (interface{}, error) {
+func (m StartWithMatcher) Match(actual any) (any, error) {
 	s, ok := actual.(string)
 	if !ok {
 		return nil, fmt.Errorf("'%v' (%T) is not a string", actual, actual)

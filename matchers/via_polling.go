@@ -37,7 +37,7 @@ func ViaPolling(m Matcher) ViaPollingMatcher {
 //
 // If the actual is a function, then the matcher will invoke the value
 // and pass the returned value to the child matcher.
-func (m ViaPollingMatcher) Match(actual interface{}) (interface{}, error) {
+func (m ViaPollingMatcher) Match(actual any) (any, error) {
 	if m.Duration == 0 {
 		m.Duration = time.Second
 	}
@@ -51,7 +51,7 @@ func (m ViaPollingMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	var value interface{}
+	var value any
 	for i := 0; i < int(m.Duration/m.Interval); i++ {
 		value, err = m.Matcher.Match(f())
 		if err == nil {
@@ -64,7 +64,7 @@ func (m ViaPollingMatcher) Match(actual interface{}) (interface{}, error) {
 	return nil, err
 }
 
-func fetchFunc(actual interface{}) (func() interface{}, error) {
+func fetchFunc(actual any) (func() any, error) {
 	t := reflect.TypeOf(actual)
 	switch t.Kind() {
 	case reflect.Func:
@@ -76,18 +76,18 @@ func fetchFunc(actual interface{}) (func() interface{}, error) {
 	}
 }
 
-func fetchFuncFromChan(actual interface{}) (func() interface{}, error) {
+func fetchFuncFromChan(actual any) (func() any, error) {
 	t := reflect.TypeOf(actual)
 	if t.ChanDir() == reflect.SendDir {
 		return nil, fmt.Errorf("channel must be able to receive")
 	}
 
-	return func() interface{} {
+	return func() any {
 		return actual
 	}, nil
 }
 
-func fetchFuncFromFunc(actual interface{}) (func() interface{}, error) {
+func fetchFuncFromFunc(actual any) (func() any, error) {
 	t := reflect.TypeOf(actual)
 	if t.NumIn() != 0 {
 		return nil, fmt.Errorf("func must not take any arguments")
@@ -97,7 +97,7 @@ func fetchFuncFromFunc(actual interface{}) (func() interface{}, error) {
 		return nil, fmt.Errorf("func must have one return type")
 	}
 
-	return func() interface{} {
+	return func() any {
 		v := reflect.ValueOf(actual)
 		retValues := v.Call(nil)
 		return retValues[0].Interface()

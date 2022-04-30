@@ -38,10 +38,10 @@ type mockToMatcher struct {
 	timeout     time.Duration
 	MatchCalled chan bool
 	MatchInput  struct {
-		Actual chan interface{}
+		Actual chan any
 	}
 	MatchOutput struct {
-		ResultValue chan interface{}
+		ResultValue chan any
 		Err         chan error
 	}
 }
@@ -49,12 +49,12 @@ type mockToMatcher struct {
 func newMockToMatcher(t vegr.T, timeout time.Duration) *mockToMatcher {
 	m := &mockToMatcher{t: t, timeout: timeout}
 	m.MatchCalled = make(chan bool, 100)
-	m.MatchInput.Actual = make(chan interface{}, 100)
-	m.MatchOutput.ResultValue = make(chan interface{}, 100)
+	m.MatchInput.Actual = make(chan any, 100)
+	m.MatchOutput.ResultValue = make(chan any, 100)
 	m.MatchOutput.Err = make(chan error, 100)
 	return m
 }
-func (m *mockToMatcher) Match(actual interface{}) (resultValue interface{}, err error) {
+func (m *mockToMatcher) Match(actual any) (resultValue any, err error) {
 	m.t.Helper()
 	m.MatchCalled <- true
 	m.MatchInput.Actual <- actual
@@ -68,7 +68,7 @@ type mockT struct {
 	FatalfCalled chan bool
 	FatalfInput  struct {
 		Format chan string
-		Args   chan []interface{}
+		Args   chan []any
 	}
 }
 
@@ -76,10 +76,10 @@ func newMockT(t vegr.T, timeout time.Duration) *mockT {
 	m := &mockT{t: t, timeout: timeout}
 	m.FatalfCalled = make(chan bool, 100)
 	m.FatalfInput.Format = make(chan string, 100)
-	m.FatalfInput.Args = make(chan []interface{}, 100)
+	m.FatalfInput.Args = make(chan []any, 100)
 	return m
 }
-func (m *mockT) Fatalf(format string, args ...interface{}) {
+func (m *mockT) Fatalf(format string, args ...any) {
 	m.t.Helper()
 	m.FatalfCalled <- true
 	m.FatalfInput.Format <- format
@@ -107,7 +107,7 @@ type mockDiffer struct {
 	timeout    time.Duration
 	DiffCalled chan bool
 	DiffInput  struct {
-		Actual, Expected chan interface{}
+		Actual, Expected chan any
 	}
 	DiffOutput struct {
 		Ret0 chan string
@@ -117,12 +117,12 @@ type mockDiffer struct {
 func newMockDiffer(t vegr.T, timeout time.Duration) *mockDiffer {
 	m := &mockDiffer{t: t, timeout: timeout}
 	m.DiffCalled = make(chan bool, 100)
-	m.DiffInput.Actual = make(chan interface{}, 100)
-	m.DiffInput.Expected = make(chan interface{}, 100)
+	m.DiffInput.Actual = make(chan any, 100)
+	m.DiffInput.Expected = make(chan any, 100)
 	m.DiffOutput.Ret0 = make(chan string, 100)
 	return m
 }
-func (m *mockDiffer) Diff(actual, expected interface{}) (ret0 string) {
+func (m *mockDiffer) Diff(actual, expected any) (ret0 string) {
 	m.t.Helper()
 	m.DiffCalled <- true
 	m.DiffInput.Actual <- actual

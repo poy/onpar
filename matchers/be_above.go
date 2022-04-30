@@ -15,7 +15,7 @@ func BeAbove(expected float64) BeAboveMatcher {
 	}
 }
 
-func (m BeAboveMatcher) Match(actual interface{}) (interface{}, error) {
+func (m BeAboveMatcher) Match(actual any) (any, error) {
 	f, err := m.toFloat(actual)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func (m BeAboveMatcher) Match(actual interface{}) (interface{}, error) {
 	return actual, nil
 }
 
-func (m BeAboveMatcher) toFloat(actual interface{}) (float64, error) {
+func (m BeAboveMatcher) toFloat(actual any) (float64, error) {
 	switch x := actual.(type) {
 	case int:
 		return float64(x), nil

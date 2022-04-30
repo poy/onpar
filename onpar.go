@@ -209,7 +209,7 @@ func (o *Onpar[T, U]) run(t *testing.T) {
 		o.child().addSpecs()
 		o.childSuite = nil
 	}
-	top, ok := interface{}(o.level).(runner[*testing.T])
+	top, ok := any(o.level).(runner[*testing.T])
 	if !ok {
 		// This should be impossible - the only place that `run` is called is in
 		// `New()`, which is only capable of returning `*Onpar[*testing.T,

@@ -10,7 +10,7 @@ import (
 func TestContain(t *testing.T) {
 	t.Parallel()
 	m := matchers.Contain("a", 1)
-	values := []interface{}{"a", "b", "c", 1, 2, 3}
+	values := []any{"a", "b", "c", 1, 2, 3}
 	v, err := m.Match(values)
 
 	if err != nil {
@@ -21,7 +21,7 @@ func TestContain(t *testing.T) {
 		t.Fatalf("expected %v to equal %v", v, values)
 	}
 
-	_, err = m.Match([]interface{}{"d", "e"})
+	_, err = m.Match([]any{"d", "e"})
 	if err == nil {
 		t.Fatal("expected err to not be nil")
 	}

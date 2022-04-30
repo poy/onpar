@@ -11,7 +11,7 @@ func HaveOccurred() HaveOccurredMatcher {
 	return HaveOccurredMatcher{}
 }
 
-func (m HaveOccurredMatcher) Match(actual interface{}) (interface{}, error) {
+func (m HaveOccurredMatcher) Match(actual any) (any, error) {
 	e, ok := actual.(error)
 	if !ok {
 		return nil, fmt.Errorf("'%v' (%T) is not an error", actual, actual)

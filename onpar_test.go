@@ -217,7 +217,7 @@ func TestSerialSpecsAreOrdered(t *testing.T) {
 }
 
 func TestUsingSuiteOutsideGroupPanics(t *testing.T) {
-	var r interface{}
+	var r any
 
 	t.Run("FakeSpecs", func(t *testing.T) {
 		defer func() {
@@ -248,7 +248,7 @@ func TestUsingSuiteOutsideGroupPanics(t *testing.T) {
 }
 
 func TestUsingParentWithoutGroupPanics(t *testing.T) {
-	var r interface{}
+	var r any
 
 	t.Run("FakeSpecs", func(t *testing.T) {
 		defer func() {

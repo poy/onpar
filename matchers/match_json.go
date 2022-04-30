@@ -6,20 +6,20 @@ import (
 	"reflect"
 )
 
-// MatchJSONMatcher converts both expected and actual to a map[string]interface{}
+// MatchJSONMatcher converts both expected and actual to a map[string]any
 // and does a reflect.DeepEqual between them
 type MatchJSONMatcher struct {
-	expected interface{}
+	expected any
 }
 
 // MatchJSON returns an MatchJSONMatcher with the expected value
-func MatchJSON(expected interface{}) MatchJSONMatcher {
+func MatchJSON(expected any) MatchJSONMatcher {
 	return MatchJSONMatcher{
 		expected: expected,
 	}
 }
 
-func (m MatchJSONMatcher) Match(actual interface{}) (interface{}, error) {
+func (m MatchJSONMatcher) Match(actual any) (any, error) {
 	a, sa, err := m.unmarshal(actual)
 	if err != nil {
 		return nil, fmt.Errorf("Error with %s: %s", sa, err)
@@ -37,8 +37,8 @@ func (m MatchJSONMatcher) Match(actual interface{}) (interface{}, error) {
 	return actual, nil
 }
 
-func (m MatchJSONMatcher) unmarshal(x interface{}) (interface{}, string, error) {
-	var result interface{}
+func (m MatchJSONMatcher) unmarshal(x any) (any, string, error) {
+	var result any
 	var s string
 
 	switch x := x.(type) {

@@ -36,7 +36,7 @@ func Receive(opts ...ReceiveOpt) ReceiveMatcher {
 	return m
 }
 
-func (m ReceiveMatcher) Match(actual interface{}) (interface{}, error) {
+func (m ReceiveMatcher) Match(actual any) (any, error) {
 	t := reflect.TypeOf(actual)
 	if t.Kind() != reflect.Chan || t.ChanDir() == reflect.SendDir {
 		return nil, fmt.Errorf("%s is not a readable channel", t.String())

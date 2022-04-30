@@ -10,7 +10,7 @@ func And(a, b Matcher, ms ...Matcher) AndMatcher {
 	}
 }
 
-func (m AndMatcher) Match(actual interface{}) (interface{}, error) {
+func (m AndMatcher) Match(actual any) (any, error) {
 	var err error
 	for _, child := range m.Children {
 		_, err = child.Match(actual)
