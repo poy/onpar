@@ -149,7 +149,7 @@ func TestRunOrder(t *testing.T) {
         // Spec "A": Order = 1
         // Spec "B": Order = 1
         // Spec "C": Order = 1
-        return t, 99, "foo"
+        return topContext{t: t, i: 99, s: "foo"}
     })
 
     o.AfterEach(func(tt topContext) {

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"path"
 	"testing"
-
-	"github.com/poy/onpar/v2/diff"
 )
 
 type prefs struct {
@@ -47,9 +45,6 @@ type Onpar[T, U any] struct {
 	// childSuite's specs to the parent.
 	childSuite child
 	childPath  []string
-
-	// TODO: why are these here, again?
-	diffOpts []diff.Opt
 }
 
 // New creates a new Onpar suite. The top-level onpar suite must be constructed
