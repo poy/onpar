@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/poy/onpar/matchers"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 func TestNot(t *testing.T) {
-	mockMatcher := newMockMatcher()
+	mockMatcher := newMockMatcher(t, time.Second)
 	m := matchers.Not(mockMatcher)
 
 	mockMatcher.MatchOutput.ResultValue <- 103

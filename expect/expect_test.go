@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/nelsam/hel/pers"
-	. "github.com/poy/onpar/expect"
+	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
+	. "github.com/poy/onpar/v2/expect"
 )
 
 type diffMatcher struct {
@@ -17,15 +18,15 @@ type diffMatcher struct {
 }
 
 func TestToRespectsDifferMatchers(t *testing.T) {
-	mockT := newMockT()
-	d := newMockDiffMatcher()
-	m := newMockToMatcher()
+	mockT := newMockT(t, time.Second)
+	d := newMockDiffMatcher(t, time.Second)
+	m := newMockToMatcher(t, time.Second)
 	mockMatcher := &diffMatcher{
 		mockDiffMatcher: *d,
 		mockToMatcher:   *m,
 	}
 	pers.Return(mockMatcher.MatchOutput, nil, nil)
-	mockDiffer := newMockDiffer()
+	mockDiffer := newMockDiffer(t, time.Second)
 
 	f := New(mockT, WithDiffer(mockDiffer))
 	f(101).To(mockMatcher)
@@ -34,10 +35,9 @@ func TestToRespectsDifferMatchers(t *testing.T) {
 }
 
 func TestToPassesActualToMatcher(t *testing.T) {
-	mockT := newMockT()
-	mockMatcher := newMockToMatcher()
-	close(mockMatcher.MatchOutput.ResultValue)
-	close(mockMatcher.MatchOutput.Err)
+	mockT := newMockT(t, time.Second)
+	mockMatcher := newMockToMatcher(t, time.Second)
+	pers.Return(mockMatcher.MatchOutput, nil, nil)
 
 	Expect(mockT, 101).To(mockMatcher)
 
@@ -52,10 +52,9 @@ func TestToPassesActualToMatcher(t *testing.T) {
 }
 
 func TestToErrorsIfMatcherFails(t *testing.T) {
-	mockT := newMockT()
-	mockMatcher := newMockToMatcher()
-	close(mockMatcher.MatchOutput.ResultValue)
-	mockMatcher.MatchOutput.Err <- fmt.Errorf("some-error")
+	mockT := newMockT(t, time.Second)
+	mockMatcher := newMockToMatcher(t, time.Second)
+	pers.Return(mockMatcher.MatchOutput, nil, fmt.Errorf("some-error"))
 
 	Expect(mockT, 101).To(mockMatcher)
 

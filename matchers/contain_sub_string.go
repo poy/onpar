@@ -19,7 +19,7 @@ func ContainSubstring(substr string) ContainSubstringMatcher {
 	}
 }
 
-func (m ContainSubstringMatcher) Match(actual interface{}) (interface{}, error) {
+func (m ContainSubstringMatcher) Match(actual any) (any, error) {
 	s, ok := actual.(string)
 	if !ok {
 		return nil, fmt.Errorf("'%v' (%T) is not a string", actual, actual)

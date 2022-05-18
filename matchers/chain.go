@@ -10,7 +10,7 @@ func Chain(a, b Matcher, ms ...Matcher) ChainMatcher {
 	}
 }
 
-func (m ChainMatcher) Match(actual interface{}) (interface{}, error) {
+func (m ChainMatcher) Match(actual any) (any, error) {
 	var err error
 	next := actual
 	for _, child := range m.Children {

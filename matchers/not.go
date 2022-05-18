@@ -4,7 +4,7 @@ import "fmt"
 
 // Matcher is a type that matches expected against actuals.
 type Matcher interface {
-	Match(actual interface{}) (resultValue interface{}, err error)
+	Match(actual any) (resultValue any, err error)
 }
 
 // NotMatcher accepts a matcher and will succeed if the specified matcher fails.
@@ -19,7 +19,7 @@ func Not(child Matcher) NotMatcher {
 	}
 }
 
-func (m NotMatcher) Match(actual interface{}) (interface{}, error) {
+func (m NotMatcher) Match(actual any) (any, error) {
 	v, err := m.child.Match(actual)
 	if err == nil {
 		return nil, fmt.Errorf("%+v (%[1]T) was expected to fail matcher %#v", actual, m.child)

@@ -13,7 +13,7 @@ func BeNil() BeNilMatcher {
 	return BeNilMatcher{}
 }
 
-func (m BeNilMatcher) Match(actual interface{}) (interface{}, error) {
+func (m BeNilMatcher) Match(actual any) (any, error) {
 	if actual == nil {
 		return nil, nil
 	}

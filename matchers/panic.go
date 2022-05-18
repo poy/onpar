@@ -11,7 +11,7 @@ func Panic() PanicMatcher {
 	return PanicMatcher{}
 }
 
-func (m PanicMatcher) Match(actual interface{}) (result interface{}, err error) {
+func (m PanicMatcher) Match(actual any) (result any, err error) {
 	f, ok := actual.(func())
 	if !ok {
 		return nil, errors.New("actual must be a func()")

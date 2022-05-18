@@ -13,7 +13,7 @@ func IsNil() IsNilMatcher {
 	return IsNilMatcher{}
 }
 
-func (m IsNilMatcher) Match(actual interface{}) (interface{}, error) {
+func (m IsNilMatcher) Match(actual any) (any, error) {
 	if actual == nil {
 		return nil, nil
 	}

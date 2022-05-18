@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/poy/onpar/matchers"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 func TestFailsWhenMatcherFails(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.Always(matcher)
 	matcher.MatchOutput.ResultValue <- nil
 	matcher.MatchOutput.Err <- fmt.Errorf("some-error")
@@ -34,7 +34,7 @@ func TestFailsWhenMatcherFails(t *testing.T) {
 
 func TestPolls10TimesForSuccess(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.Always(matcher)
 
 	i := 0
@@ -63,7 +63,7 @@ func TestPolls10TimesForSuccess(t *testing.T) {
 
 func TestPollsEach10msForSuccess(t *testing.T) {
 	t.Parallel()
-	matcher := newMockMatcher()
+	matcher := newMockMatcher(t, time.Second)
 	m := matchers.Always(matcher)
 
 	var ts []int64

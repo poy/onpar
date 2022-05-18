@@ -15,7 +15,7 @@ func MatchRegexp(pattern string) MatchRegexpMatcher {
 	}
 }
 
-func (m MatchRegexpMatcher) Match(actual interface{}) (interface{}, error) {
+func (m MatchRegexpMatcher) Match(actual any) (any, error) {
 	r, err := regexp.Compile(m.pattern)
 	if err != nil {
 		return nil, err

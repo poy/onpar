@@ -6,16 +6,16 @@ import (
 )
 
 type ContainMatcher struct {
-	values []interface{}
+	values []any
 }
 
-func Contain(values ...interface{}) ContainMatcher {
+func Contain(values ...any) ContainMatcher {
 	return ContainMatcher{
 		values: values,
 	}
 }
 
-func (m ContainMatcher) Match(actual interface{}) (interface{}, error) {
+func (m ContainMatcher) Match(actual any) (any, error) {
 	actualType := reflect.TypeOf(actual)
 	if actualType.Kind() != reflect.Slice && actualType.Kind() != reflect.Array {
 		return nil, fmt.Errorf("%s is not a Slice or Array", actualType.Kind())
@@ -31,7 +31,7 @@ func (m ContainMatcher) Match(actual interface{}) (interface{}, error) {
 	return actual, nil
 }
 
-func (m ContainMatcher) containsElem(actual reflect.Value, elem interface{}) bool {
+func (m ContainMatcher) containsElem(actual reflect.Value, elem any) bool {
 	for i := 0; i < actual.Len(); i++ {
 		if reflect.DeepEqual(actual.Index(i).Interface(), elem) {
 			return true

@@ -5,13 +5,14 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
+	"time"
 
+	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
 	"github.com/fatih/color"
-	"github.com/nelsam/hel/pers"
-	"github.com/poy/onpar"
-	"github.com/poy/onpar/diff"
-	"github.com/poy/onpar/expect"
-	"github.com/poy/onpar/matchers"
+	"github.com/poy/onpar/v2"
+	"github.com/poy/onpar/v2/diff"
+	"github.com/poy/onpar/v2/expect"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 type testNestedStruct struct {
@@ -31,12 +32,11 @@ type testStruct struct {
 }
 
 func TestDiff(t *testing.T) {
-	o := onpar.New()
-	defer o.Run(t)
+	o := onpar.New(t)
 
 	for _, tt := range []struct {
 		name  string
-		value interface{}
+		value any
 	}{
 		{"string", "this is a string"},
 		{"int", 21},
@@ -100,7 +100,7 @@ func TestDiff(t *testing.T) {
 
 	for _, tt := range []struct {
 		name     string
-		a, b     interface{}
+		a, b     any
 		expected string
 	}{
 		{"different strings", "foo", "bar", ">foo!=bar<"},
@@ -129,7 +129,7 @@ func TestDiff(t *testing.T) {
 	}
 
 	o.Spec("it calls Sprinters", func(t *testing.T) {
-		s := newMockSprinter()
+		s := newMockSprinter(t, time.Second)
 		pers.Return(s.SprintOutput, "foo")
 		out := diff.New(diff.WithSprinter(s)).Diff("first", "second")
 		expect.Expect(t, s).To(pers.HaveMethodExecuted("Sprint", pers.WithArgs("firstsecond")))
@@ -178,7 +178,7 @@ func ExampleActual() {
 
 func ExampleWithSprinter_Color() {
 	// WithSprinter is provided for integration with any type
-	// that has an `Sprint(...interface{}) string` method.  Here
+	// that has an `Sprint(...any) string` method.  Here
 	// we use github.com/fatih/color.
 	styles := []diff.Opt{
 		diff.Actual(diff.WithSprinter(color.New(color.CrossedOut, color.FgRed))),

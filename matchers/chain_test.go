@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/poy/onpar/matchers"
+	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 func TestChainPassesResultOnSuccess(t *testing.T) {
-	mockMatcherA := newMockMatcher()
-	mockMatcherB := newMockMatcher()
-	mockMatcherC := newMockMatcher()
-	close(mockMatcherA.MatchOutput.Err)
-	close(mockMatcherB.MatchOutput.Err)
-	close(mockMatcherC.MatchOutput.Err)
-	mockMatcherA.MatchOutput.ResultValue <- 1
-	mockMatcherB.MatchOutput.ResultValue <- 2
-	mockMatcherC.MatchOutput.ResultValue <- 3
+	mockMatcherA := newMockMatcher(t, time.Second)
+	mockMatcherB := newMockMatcher(t, time.Second)
+	mockMatcherC := newMockMatcher(t, time.Second)
+
+	pers.Return(mockMatcherA.MatchOutput, 1, nil)
+	pers.Return(mockMatcherB.MatchOutput, 2, nil)
+	pers.Return(mockMatcherC.MatchOutput, 3, nil)
 
 	m := matchers.Chain(mockMatcherA, mockMatcherB, mockMatcherC)
 	result, err := m.Match(101)
@@ -50,15 +50,13 @@ func TestChainPassesResultOnSuccess(t *testing.T) {
 }
 
 func TestChainStopsOnFailuire(t *testing.T) {
-	mockMatcherA := newMockMatcher()
-	mockMatcherB := newMockMatcher()
-	mockMatcherC := newMockMatcher()
-	close(mockMatcherA.MatchOutput.Err)
-	mockMatcherB.MatchOutput.Err <- fmt.Errorf("some-error")
-	close(mockMatcherC.MatchOutput.Err)
-	mockMatcherA.MatchOutput.ResultValue <- 1
-	mockMatcherB.MatchOutput.ResultValue <- 2
-	mockMatcherC.MatchOutput.ResultValue <- 3
+	mockMatcherA := newMockMatcher(t, time.Second)
+	mockMatcherB := newMockMatcher(t, time.Second)
+	mockMatcherC := newMockMatcher(t, time.Second)
+
+	pers.Return(mockMatcherA.MatchOutput, 1, nil)
+	pers.Return(mockMatcherB.MatchOutput, 2, fmt.Errorf("some-error"))
+	pers.Return(mockMatcherC.MatchOutput, 3, nil)
 
 	m := matchers.Chain(mockMatcherA, mockMatcherB, mockMatcherC)
 	_, err := m.Match(101)

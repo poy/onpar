@@ -8,17 +8,17 @@ import (
 // HaveKeyMatcher accepts map types and will succeed if the map contains the
 // specified key.
 type HaveKeyMatcher struct {
-	key interface{}
+	key any
 }
 
 // HaveKey returns a HaveKeyMatcher with the specified key.
-func HaveKey(key interface{}) HaveKeyMatcher {
+func HaveKey(key any) HaveKeyMatcher {
 	return HaveKeyMatcher{
 		key: key,
 	}
 }
 
-func (m HaveKeyMatcher) Match(actual interface{}) (interface{}, error) {
+func (m HaveKeyMatcher) Match(actual any) (any, error) {
 	t := reflect.TypeOf(actual)
 	if t.Kind() != reflect.Map {
 		return nil, fmt.Errorf("'%v' (%T) is not a Map", actual, actual)

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/nelsam/hel/pers"
-	"github.com/poy/onpar/expect"
-	"github.com/poy/onpar/matchers"
+	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
+	"github.com/poy/onpar/v2/expect"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 func TestEqual(t *testing.T) {
@@ -33,7 +34,7 @@ func TestEqualDiff(t *testing.T) {
 	t.Parallel()
 
 	m := matchers.Equal(101)
-	mockDiffer := newMockDiffer()
+	mockDiffer := newMockDiffer(t, time.Second)
 	pers.Return(mockDiffer.DiffOutput, "this is a valid diff")
 	m.UseDiffer(mockDiffer)
 	_, err := m.Match(103)

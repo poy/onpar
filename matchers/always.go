@@ -34,7 +34,7 @@ func Always(m Matcher) AlwaysMatcher {
 //
 // If the actual is a function, then the matcher will invoke the value
 // and pass the returned value to the child matcher.
-func (m AlwaysMatcher) Match(actual interface{}) (interface{}, error) {
+func (m AlwaysMatcher) Match(actual any) (any, error) {
 	if m.Duration == 0 {
 		m.Duration = 100 * time.Millisecond
 	}
@@ -48,7 +48,7 @@ func (m AlwaysMatcher) Match(actual interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	var value interface{}
+	var value any
 	for i := 0; i < int(m.Duration/m.Interval); i++ {
 		value, err = m.Matcher.Match(f())
 		if err != nil {

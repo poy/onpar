@@ -6,16 +6,16 @@ import (
 )
 
 type FetchMatcher struct {
-	OutputTo interface{}
+	OutputTo any
 }
 
-func Fetch(outputTo interface{}) FetchMatcher {
+func Fetch(outputTo any) FetchMatcher {
 	return FetchMatcher{
 		OutputTo: outputTo,
 	}
 }
 
-func (m FetchMatcher) Match(actual interface{}) (interface{}, error) {
+func (m FetchMatcher) Match(actual any) (any, error) {
 	outType := reflect.TypeOf(m.OutputTo)
 	outValue := reflect.ValueOf(m.OutputTo)
 	actualValue := reflect.ValueOf(actual)

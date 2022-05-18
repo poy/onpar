@@ -27,7 +27,7 @@ func WithFormat(format string) Opt {
 
 // Sprinter is any type which can print a string.
 type Sprinter interface {
-	Sprint(...interface{}) string
+	Sprint(...any) string
 }
 
 // WithSprinter returns an Opt that wraps up differences
@@ -113,11 +113,11 @@ func (d Differ) format(v string) string {
 
 // Diff takes two values and returns a string showing a
 // diff of them.
-func (d *Differ) Diff(actual, expected interface{}) string {
+func (d *Differ) Diff(actual, expected any) string {
 	return d.diff(reflect.ValueOf(actual), reflect.ValueOf(expected))
 }
 
-func (d *Differ) genDiff(format string, actual, expected interface{}) string {
+func (d *Differ) genDiff(format string, actual, expected any) string {
 	afmt := fmt.Sprintf(format, actual)
 	if d.actual != nil {
 		afmt = d.actual.format(afmt)

@@ -4,12 +4,12 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/poy/onpar/matchers"
+	"github.com/poy/onpar/v2/matchers"
 )
 
 // ToMatcher is a type that can be passed to (*To).To().
 type ToMatcher interface {
-	Match(actual interface{}) (resultValue interface{}, err error)
+	Match(actual any) (resultValue any, err error)
 }
 
 // Differ is a type of matcher that will need to diff its expected and
@@ -20,7 +20,7 @@ type DiffMatcher interface {
 
 // T is a type that we can perform assertions with.
 type T interface {
-	Fatalf(format string, args ...interface{})
+	Fatalf(format string, args ...any)
 }
 
 // THelper has the method that tells the testing framework that it can declare
@@ -42,11 +42,11 @@ func WithDiffer(d matchers.Differ) Opt {
 }
 
 // Expectation is provided to make it clear what the expect function does.
-type Expectation func(actual interface{}) *To
+type Expectation func(actual any) *To
 
 // New creates a new Expectation
 func New(t T, opts ...Opt) Expectation {
-	return func(actual interface{}) *To {
+	return func(actual any) *To {
 		to := To{
 			actual: actual,
 			t:      t,
@@ -59,14 +59,14 @@ func New(t T, opts ...Opt) Expectation {
 }
 
 // Expect performs New(t)(actual).
-func Expect(t T, actual interface{}) *To {
+func Expect(t T, actual any) *To {
 	return New(t)(actual)
 }
 
 // To is a type that stores actual values prior to running them through
 // matchers.
 type To struct {
-	actual    interface{}
+	actual    any
 	parentErr error
 
 	t      T

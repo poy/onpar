@@ -10,7 +10,7 @@ func Or(a, b Matcher, ms ...Matcher) OrMatcher {
 	}
 }
 
-func (m OrMatcher) Match(actual interface{}) (interface{}, error) {
+func (m OrMatcher) Match(actual any) (any, error) {
 	var err error
 	for _, child := range m.Children {
 		_, err = child.Match(actual)

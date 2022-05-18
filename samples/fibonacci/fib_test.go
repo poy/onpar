@@ -3,15 +3,14 @@ package fibonacci_test
 import (
 	"testing"
 
-	"github.com/poy/onpar"
-	. "github.com/poy/onpar/expect"
-	. "github.com/poy/onpar/matchers"
-	"github.com/poy/onpar/samples/fibonacci"
+	"github.com/poy/onpar/v2"
+	. "github.com/poy/onpar/v2/expect"
+	. "github.com/poy/onpar/v2/matchers"
+	"github.com/poy/onpar/v2/samples/fibonacci"
 )
 
 func TestDifferentInputs(t *testing.T) {
-	o := onpar.New()
-	defer o.Run(t)
+	o := onpar.New(t)
 
 	o.Group("when n is 0", func() {
 		o.Spec("it returns 1", func(t *testing.T) {
