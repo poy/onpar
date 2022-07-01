@@ -1,10 +1,66 @@
 package diff
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
+	"time"
+
+	"github.com/poy/onpar/v2/diff/str"
 )
+
+var DefaultStrDiffs = []StringDiffAlgorithm{str.NewCharDiff()}
+
+const DefaultTimeout = time.Second
+
+// StringDiffAlgorithm is a type which can generate diffs between two strings.
+type StringDiffAlgorithm interface {
+	// Diffs takes a context.Context to know when to stop, returning a channel
+	// of diffs. Each new diff returned on this channel should have a lower
+	// cost than the previous one.
+	//
+	// If a higher cost diff is returned after a lower cost diff, it will be
+	// discarded.
+	//
+	// Once ctx.Done() is closed, diffs will not be read off of the returned
+	// channel - it's up to the algorithm to perform select statements to avoid
+	// deadlocking.
+	Diffs(ctx context.Context, actual, expected []rune) chan str.Diff
+}
+
+// WithStringAlgos picks the algorithms that will be used to diff strings. We
+// will always use a "dumb" algorithm for the base case that simply returns the
+// full string as either equal or different, but extra algorithms can be
+// provided to get more useful diffs for larger strings. For example,
+// StringCharDiff gets diffs of characters (good for catching misspellings), and
+// StringLineDiff gets diffs of lines (good for large multiline output).
+//
+// The default is DefaultStrDiffs.
+//
+// If called without any arguments, only the "dumb" algorithm will be used.
+func WithStringAlgos(algos ...StringDiffAlgorithm) Opt {
+	return func(d Differ) Differ {
+		d.stringAlgos = algos
+		return d
+	}
+}
+
+// WithTimeout sets a timeout for diffing. Normally, diffs will be refined until
+// the "cost" of the diff is as low as possible. If diffing is taking too long,
+// the best diff that has been loaded will be returned.
+//
+// The default is DefaultTimeout.
+//
+// If no diff at all has been generated yet, we will still wait until the first
+// diff is generated before returning, but no refinement will be done.
+func WithTimeout(timeout time.Duration) Opt {
+	return func(d Differ) Differ {
+		d.timeout = timeout
+		return d
+	}
+}
 
 // Opt is an option type that can be passed to New.
 //
@@ -47,8 +103,9 @@ func applyOpts(o *Differ, opts ...Opt) {
 	}
 }
 
-// Actual returns an Opt that only applies other Opt values
-// to the actual value.
+// Actual returns an Opt that only applies formatting to the actual value.
+// Non-formatting options (e.g. different diffing algorithms) will have no
+// effect.
 func Actual(opts ...Opt) Opt {
 	return func(d Differ) Differ {
 		if d.actual == nil {
@@ -59,8 +116,9 @@ func Actual(opts ...Opt) Opt {
 	}
 }
 
-// Expected returns an Opt that only applies other Opt values
-// to the expected value.
+// Expected returns an Opt that only applies formatting to the expected value.
+// Non-formatting options (e.g. different diffing algorithms) will have no
+// effect.
 func Expected(opts ...Opt) Opt {
 	return func(d Differ) Differ {
 		if d.expected == nil {
@@ -78,13 +136,18 @@ type Differ struct {
 
 	actual   *Differ
 	expected *Differ
+
+	timeout     time.Duration
+	stringAlgos []StringDiffAlgorithm
 }
 
 // New creates a Differ, using the passed in opts to manipulate
 // its diffing behavior and output.
 //
-// If opts is empty, the default options used will be:
-// [ WithFormat(">%s<"), Actual(WithFormat("%s!=")) ]
+// By default, we wrap mismatched text in angle brackets and separate them with
+// "!=". Example:
+//
+//     matching text >actual!=expected< more matching text
 //
 // opts will be applied to the text in the order they
 // are passed in, so you can do things like color a value
@@ -93,14 +156,24 @@ type Differ struct {
 // See the examples on the different Opt types for more
 // detail.
 func New(opts ...Opt) *Differ {
-	d := Differ{}
-	if len(opts) == 0 {
-		opts = []Opt{WithFormat(">%s<"), Actual(WithFormat("%s!="))}
+	d := Differ{
+		timeout:     DefaultTimeout,
+		stringAlgos: DefaultStrDiffs,
 	}
-	for _, opt := range opts {
-		d = opt(d)
+	for _, o := range opts {
+		d = o(d)
+	}
+	if d.needsDefaultFmt() {
+		d = WithFormat(">%s<")(d)
+		d = Actual(WithFormat("%s!="))(d)
 	}
 	return &d
+}
+
+func (d *Differ) needsDefaultFmt() bool {
+	return len(d.wrappers) == 0 &&
+		d.actual == nil &&
+		d.expected == nil
 }
 
 // format is used to format a string using the wrapper functions.
@@ -114,7 +187,9 @@ func (d Differ) format(v string) string {
 // Diff takes two values and returns a string showing a
 // diff of them.
 func (d *Differ) Diff(actual, expected any) string {
-	return d.diff(reflect.ValueOf(actual), reflect.ValueOf(expected))
+	ctx, cancel := context.WithTimeout(context.Background(), d.timeout)
+	defer cancel()
+	return d.diff(ctx, reflect.ValueOf(actual), reflect.ValueOf(expected))
 }
 
 func (d *Differ) genDiff(format string, actual, expected any) string {
@@ -129,19 +204,19 @@ func (d *Differ) genDiff(format string, actual, expected any) string {
 	return d.format(afmt + efmt)
 }
 
-func (d *Differ) diff(av, ev reflect.Value) string {
+func (d *Differ) diff(ctx context.Context, av, ev reflect.Value) string {
 	if !av.IsValid() {
 		if !ev.IsValid() {
 			return "<nil>"
 		}
 		if ev.Kind() == reflect.Ptr {
-			return d.diff(av, ev.Elem())
+			return d.diff(ctx, av, ev.Elem())
 		}
 		return d.genDiff("%v", "<nil>", ev.Interface())
 	}
 	if !ev.IsValid() {
 		if av.Kind() == reflect.Ptr {
-			return d.diff(av.Elem(), ev)
+			return d.diff(ctx, av.Elem(), ev)
 		}
 		return d.genDiff("%v", av.Interface(), "<nil>")
 	}
@@ -153,13 +228,17 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 	if av.CanInterface() {
 		switch av.Interface().(type) {
 		case []rune, []byte, string:
-			return d.strDiff(av, ev)
+			// TODO: we probably want to (eventually) run this concurrently. As
+			// is, a struct with two complicated strings in two separate fields
+			// that both need diffs will probably get a pretty good diff for the
+			// first field and just the baseline diff for the second one.
+			return d.strDiff(ctx, av, ev)
 		}
 	}
 
 	switch av.Kind() {
 	case reflect.Ptr, reflect.Interface:
-		return d.diff(av.Elem(), ev.Elem())
+		return d.diff(ctx, av.Elem(), ev.Elem())
 	case reflect.Slice, reflect.Array, reflect.String:
 		if av.Len() != ev.Len() {
 			// TODO: do a more thorough diff of values
@@ -167,7 +246,7 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 		}
 		var elems []string
 		for i := 0; i < av.Len(); i++ {
-			elems = append(elems, d.diff(av.Index(i), ev.Index(i)))
+			elems = append(elems, d.diff(ctx, av.Index(i), ev.Index(i)))
 		}
 		return "[ " + strings.Join(elems, ", ") + " ]"
 	case reflect.Map:
@@ -180,7 +259,7 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 				parts = append(parts, d.genDiff("%s", fmt.Sprintf("missing key %v", k), fmt.Sprintf("%v: %v", k, bmv.Interface())))
 				continue
 			}
-			parts = append(parts, fmt.Sprintf("%v: %s", k, d.diff(amv, bmv)))
+			parts = append(parts, fmt.Sprintf("%v: %s", k, d.diff(ctx, amv, bmv)))
 		}
 		for _, kv := range av.MapKeys() {
 			// We've already compared all keys that exist in both maps; now we're
@@ -206,7 +285,7 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 			name := f.Name
 			bfv := ev.Field(i)
 			afv := av.Field(i)
-			parts = append(parts, fmt.Sprintf("%s: %s", name, d.diff(afv, bfv)))
+			parts = append(parts, fmt.Sprintf("%s: %s", name, d.diff(ctx, afv, bfv)))
 		}
 		return fmt.Sprintf("%s{%s}", av.Type(), strings.Join(parts, ", "))
 	default:
@@ -221,92 +300,64 @@ func (d *Differ) diff(av, ev reflect.Value) string {
 	}
 }
 
-// strDiff helps us generate a diff between two strings.
-//
-// TODO: make this maybe less naive?  string diffs are hard.
-func (d *Differ) strDiff(av, ev reflect.Value) string {
-	strTyp := reflect.TypeOf("")
-	var out string
+// strDiff helps us generate a diff between two strings. It uses the baseStrAlgo
+// first to get a baseline, then uses results from the other algorithms set in
+// d.stringAlgos to get the lowest cost possible before returning.
+func (d *Differ) strDiff(ctx context.Context, av, ev reflect.Value) string {
+	runeTyp := reflect.TypeOf([]rune(nil))
+	actual := av.Convert(runeTyp).Interface().([]rune)
+	expected := ev.Convert(runeTyp).Interface().([]rune)
 
-	diffs := smallestDiff(av, ev, 0, 0)
-	i := 0
-	for _, diff := range diffs {
-		out += av.Slice(i, diff.aStart).Convert(strTyp).Interface().(string)
-		curra := av.Slice(diff.aStart, diff.aEnd).Convert(strTyp).Interface().(string)
-		curre := ev.Slice(diff.eStart, diff.eEnd).Convert(strTyp).Interface().(string)
-		out += d.genDiff("%s", curra, curre)
-		i = diff.aEnd
-	}
-	out += av.Slice(i, av.Len()).Convert(strTyp).Interface().(string)
-	return out
-}
-
-type diffs []difference
-
-func (d diffs) cost() int {
-	cost := 0
-	for _, diff := range d {
-		cost += diff.cost()
-	}
-	return cost
-}
-
-type difference struct {
-	aStart, aEnd, eStart, eEnd int
-}
-
-func (d difference) cost() int {
-	return greater(d.aEnd-d.aStart, d.eEnd-d.eStart)
-}
-
-func greater(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-type diffIdx struct {
-	aStart, eStart int
-}
-
-func smallestDiff(av, ev reflect.Value, aStart, eStart int) []difference {
-	cache := make(map[diffIdx][]difference)
-	return smallestCachingDiff(cache, av, ev, aStart, eStart)
-}
-
-func smallestCachingDiff(cache map[diffIdx][]difference, av, ev reflect.Value, aStart, eStart int) []difference {
-	for aStart < av.Len() && eStart < ev.Len() && av.Index(aStart).Interface() == ev.Index(eStart).Interface() {
-		aStart++
-		eStart++
-	}
-	if d, ok := cache[diffIdx{aStart: aStart, eStart: eStart}]; ok {
-		return d
-	}
-	if aStart == av.Len() && eStart == ev.Len() {
-		return nil
-	}
-
-	shortest := diffs{{aStart: aStart, aEnd: av.Len(), eStart: eStart, eEnd: ev.Len()}}
-	if aStart == av.Len() || eStart == ev.Len() {
-		return shortest
-	}
-	for i := aStart; i < av.Len(); i++ {
-		for j := eStart; j < ev.Len(); j++ {
-			if av.Index(i).Interface() != ev.Index(j).Interface() {
-				continue
+	var wg sync.WaitGroup
+	results := make(chan str.Diff)
+	for _, algo := range d.stringAlgos {
+		algoCh := algo.Diffs(ctx, actual, expected)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case diff, ok := <-algoCh:
+					if !ok {
+						return
+					}
+					results <- diff
+				case <-ctx.Done():
+					return
+				}
 			}
-			currDiffs := append(diffs{{
-				aStart: aStart,
-				aEnd:   i,
-				eStart: eStart,
-				eEnd:   j,
-			}}, smallestCachingDiff(cache, av, ev, i+1, j+1)...)
-			if currDiffs.cost() < shortest.cost() {
-				shortest = currDiffs
-			}
+		}()
+	}
+
+	go func() {
+		// All of our algorithms are sending results to the same channel. Once
+		// they are all done (either from the timeout or from exhausting all
+		// options), we need to close the results channel to let the main logic
+		// know that everything's done - we don't want to continue waiting if
+		// all algorithms have exhausted their possible diffs.
+		//
+		// Since we know that the results channel will be closed once the
+		// context times out, there's no reason to select on the results
+		// channel.
+		defer close(results)
+		wg.Wait()
+	}()
+
+	best := baseStringDiff(actual, expected)
+	for diff := range results {
+		if diff.Cost() >= best.Cost() {
+			continue
 		}
+		best = diff
 	}
-	cache[diffIdx{aStart: aStart, eStart: eStart}] = shortest
-	return shortest
+
+	var out string
+	for _, section := range best.Sections() {
+		if section.Type == str.TypeMatch {
+			out += string(section.Actual)
+			continue
+		}
+		out += d.genDiff("%s", string(section.Actual), string(section.Expected))
+	}
+	return out
 }
