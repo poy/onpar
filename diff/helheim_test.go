@@ -13,6 +13,38 @@ import (
 	"github.com/poy/onpar/v2/diff/str"
 )
 
+type mockStringDiffAlgorithm struct {
+	t           vegr.T
+	timeout     time.Duration
+	DiffsCalled chan bool
+	DiffsInput  struct {
+		Ctx              chan context.Context
+		Actual, Expected chan []rune
+	}
+	DiffsOutput struct {
+		Ret0 chan (<-chan str.Diff)
+	}
+}
+
+func newMockStringDiffAlgorithm(t vegr.T, timeout time.Duration) *mockStringDiffAlgorithm {
+	m := &mockStringDiffAlgorithm{t: t, timeout: timeout}
+	m.DiffsCalled = make(chan bool, 100)
+	m.DiffsInput.Ctx = make(chan context.Context, 100)
+	m.DiffsInput.Actual = make(chan []rune, 100)
+	m.DiffsInput.Expected = make(chan []rune, 100)
+	m.DiffsOutput.Ret0 = make(chan (<-chan str.Diff), 100)
+	return m
+}
+func (m *mockStringDiffAlgorithm) Diffs(ctx context.Context, actual, expected []rune) (ret0 <-chan str.Diff) {
+	m.t.Helper()
+	m.DiffsCalled <- true
+	m.DiffsInput.Ctx <- ctx
+	m.DiffsInput.Actual <- actual
+	m.DiffsInput.Expected <- expected
+	vegr.PopulateReturns(m.t, "Diffs", m.timeout, m.DiffsOutput, &ret0)
+	return ret0
+}
+
 type mockSprinter struct {
 	t            vegr.T
 	timeout      time.Duration
@@ -37,38 +69,6 @@ func (m *mockSprinter) Sprint(arg0 ...any) (ret0 string) {
 	m.SprintCalled <- true
 	m.SprintInput.Arg0 <- arg0
 	vegr.PopulateReturns(m.t, "Sprint", m.timeout, m.SprintOutput, &ret0)
-	return ret0
-}
-
-type mockStringDiffAlgorithm struct {
-	t           vegr.T
-	timeout     time.Duration
-	DiffsCalled chan bool
-	DiffsInput  struct {
-		Ctx              chan context.Context
-		Actual, Expected chan []rune
-	}
-	DiffsOutput struct {
-		Ret0 chan chan str.Diff
-	}
-}
-
-func newMockStringDiffAlgorithm(t vegr.T, timeout time.Duration) *mockStringDiffAlgorithm {
-	m := &mockStringDiffAlgorithm{t: t, timeout: timeout}
-	m.DiffsCalled = make(chan bool, 100)
-	m.DiffsInput.Ctx = make(chan context.Context, 100)
-	m.DiffsInput.Actual = make(chan []rune, 100)
-	m.DiffsInput.Expected = make(chan []rune, 100)
-	m.DiffsOutput.Ret0 = make(chan chan str.Diff, 100)
-	return m
-}
-func (m *mockStringDiffAlgorithm) Diffs(ctx context.Context, actual, expected []rune) (ret0 chan str.Diff) {
-	m.t.Helper()
-	m.DiffsCalled <- true
-	m.DiffsInput.Ctx <- ctx
-	m.DiffsInput.Actual <- actual
-	m.DiffsInput.Expected <- expected
-	vegr.PopulateReturns(m.t, "Diffs", m.timeout, m.DiffsOutput, &ret0)
 	return ret0
 }
 

@@ -141,11 +141,99 @@ func NewCharDiff(opts ...CharDiffOpt) *CharDiff {
 	return &d
 }
 
-func (c *CharDiff) Diffs(ctx context.Context, actual, expected []rune) chan Diff {
+func (c *CharDiff) Diffs(ctx context.Context, actual, expected []rune) <-chan Diff {
 	ch := make(chan Diff)
 	var m sync.Map
 	go c.sendDiffs(ctx, ch, &m, actual, expected, 0, 0)
 	return ch
+}
+
+func (c *CharDiff) sendBestResults(ctx context.Context, ch chan<- Diff, bcast *broadcast, baseSections []DiffSection) {
+	defer close(ch)
+
+	subCh := bcast.subscribe()
+	var cheapest *charDiff
+	for {
+		select {
+		case subDiff, ok := <-subCh:
+			if !ok {
+				return
+			}
+			diff := &charDiff{
+				baseCost:    c.baseCost,
+				perCharCost: c.perCharCost,
+				sections:    append([]DiffSection(nil), baseSections...),
+			}
+			diff.sections = append(diff.sections, subDiff.Sections()...)
+			diff.calculate()
+			if cheapest == nil || cheapest.Cost() > diff.Cost() {
+				cheapest = diff
+				select {
+				case ch <- cheapest:
+				case <-ctx.Done():
+					return
+				}
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (c *CharDiff) runBroadcast(ctx context.Context, bcast *broadcast, ch <-chan Diff, actual, expected []rune, actualStart, expectedStart int) {
+	defer bcast.done()
+
+	base := &charDiff{
+		baseCost:    c.baseCost,
+		perCharCost: c.perCharCost,
+		sections: []DiffSection{
+			{Type: TypeReplace, Actual: actual[actualStart:], Expected: expected[expectedStart:]},
+		},
+	}
+	base.calculate()
+	shortest := Diff(base)
+	bcast.send(ctx, shortest)
+
+	if ctx.Err() != nil {
+		return
+	}
+
+	for diff := range ch {
+		if ctx.Err() != nil {
+			return
+		}
+		if diff.Cost() >= shortest.Cost() {
+			continue
+		}
+		shortest = diff
+		bcast.send(ctx, shortest)
+	}
+}
+
+func (c *CharDiff) sendSubDiffs(ctx context.Context, wg *sync.WaitGroup, subCh <-chan Diff, results chan<- Diff, section DiffSection) {
+	defer wg.Done()
+
+	for {
+		select {
+		case subDiff, ok := <-subCh:
+			if !ok {
+				return
+			}
+			diff := &charDiff{
+				baseCost:    c.baseCost,
+				perCharCost: c.perCharCost,
+				sections:    append([]DiffSection{section}, subDiff.Sections()...),
+			}
+			diff.calculate()
+			select {
+			case results <- diff:
+			case <-ctx.Done():
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func (c *CharDiff) sendDiffs(ctx context.Context, ch chan<- Diff, cache *sync.Map, actual, expected []rune, actualStart, expectedStart int) {
@@ -164,8 +252,6 @@ func (c *CharDiff) sendDiffs(ctx context.Context, ch chan<- Diff, cache *sync.Ma
 			select {
 			case ch <- diff:
 			case <-ctx.Done():
-				close(ch)
-				return
 			}
 		}
 		close(ch)
@@ -181,114 +267,39 @@ func (c *CharDiff) sendDiffs(ctx context.Context, ch chan<- Diff, cache *sync.Ma
 			{Type: TypeMatch, Actual: actual[actualStart:actualEnd], Expected: expected[expectedStart:expectedEnd]},
 		}
 	}
-	go func() {
-		defer close(ch)
-		subCh := bcast.subscribe()
-		var cheapest *charDiff
-		for {
-			select {
-			case subDiff, ok := <-subCh:
-				if !ok {
-					return
-				}
-				diff := &charDiff{
-					baseCost:    c.baseCost,
-					perCharCost: c.perCharCost,
-					sections:    append([]DiffSection(nil), baseSections...),
-				}
-				diff.sections = append(diff.sections, subDiff.Sections()...)
-				diff.calculate()
-				if cheapest == nil || cheapest.Cost() > diff.Cost() {
-					cheapest = diff
-					select {
-					case ch <- diff:
-					case <-ctx.Done():
-						return
-					}
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+	go c.sendBestResults(ctx, ch, bcast, baseSections)
 
-	if !running {
-		subCh := make(chan Diff)
-		var wg sync.WaitGroup
+	if running {
+		return
+	}
 
-		go func() {
-			defer bcast.done()
+	subCh := make(chan Diff)
+	go c.runBroadcast(ctx, bcast, subCh, actual, expected, actualEnd, expectedEnd)
 
-			base := &charDiff{
-				baseCost:    c.baseCost,
-				perCharCost: c.perCharCost,
-				sections: []DiffSection{
-					{Type: TypeReplace, Actual: actual[actualEnd:], Expected: expected[expectedEnd:]},
-				},
-			}
-			base.calculate()
-			shortest := Diff(base)
-			bcast.send(ctx, shortest)
+	var wg sync.WaitGroup
+	for i := actualEnd; i < len(actual); i++ {
+		for j := expectedEnd; j < len(expected); j++ {
 			if ctx.Err() != nil {
 				return
 			}
-
-			for diff := range subCh {
-				if ctx.Err() != nil {
-					return
-				}
-				if diff.Cost() >= shortest.Cost() {
-					continue
-				}
-				shortest = diff
-				bcast.send(ctx, shortest)
+			if actual[i] != expected[j] {
+				continue
 			}
-		}()
-
-		for i := actualEnd; i < len(actual); i++ {
-			for j := expectedEnd; j < len(expected); j++ {
-				if ctx.Err() != nil {
-					return
-				}
-				if actual[i] != expected[j] {
-					continue
-				}
-				subSubCh := make(chan Diff)
-				wg.Add(1)
-				go func(i, j int) {
-					defer wg.Done()
-					for {
-						select {
-						case subDiff, ok := <-subSubCh:
-							if !ok {
-								return
-							}
-							diff := &charDiff{
-								baseCost:    c.baseCost,
-								perCharCost: c.perCharCost,
-								sections: []DiffSection{
-									{Type: TypeReplace, Actual: actual[actualEnd:i], Expected: expected[expectedEnd:j]},
-								},
-							}
-							diff.sections = append(diff.sections, subDiff.Sections()...)
-							diff.calculate()
-							select {
-							case subCh <- diff:
-							case <-ctx.Done():
-								return
-							}
-						case <-ctx.Done():
-							return
-						}
-					}
-				}(i, j)
-				c.sendDiffs(ctx, subSubCh, cache, actual, expected, i, j)
-			}
+			subSubCh := make(chan Diff)
+			wg.Add(1)
+			go c.sendSubDiffs(ctx, &wg, subSubCh, subCh, DiffSection{
+				Type:     TypeReplace,
+				Actual:   actual[actualEnd:i],
+				Expected: expected[expectedEnd:j],
+			})
+			c.sendDiffs(ctx, subSubCh, cache, actual, expected, i, j)
 		}
-
-		go func() {
-			defer close(subCh)
-			wg.Wait()
-		}()
 	}
+
+	go closeAfter(subCh, &wg)
+}
+
+func closeAfter(ch chan<- Diff, wg *sync.WaitGroup) {
+	wg.Wait()
+	close(ch)
 }

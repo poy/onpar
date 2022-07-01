@@ -27,7 +27,7 @@ type StringDiffAlgorithm interface {
 	// Once ctx.Done() is closed, diffs will not be read off of the returned
 	// channel - it's up to the algorithm to perform select statements to avoid
 	// deadlocking.
-	Diffs(ctx context.Context, actual, expected []rune) chan str.Diff
+	Diffs(ctx context.Context, actual, expected []rune) <-chan str.Diff
 }
 
 // WithStringAlgos picks the algorithms that will be used to diff strings. We

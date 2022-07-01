@@ -65,7 +65,7 @@ func TestCharDiff(t *testing.T) {
 	}
 
 	o.Group("exhaustive results", func() {
-		finalDiff := func(t *testing.T, timeout time.Duration, diffs chan str.Diff) str.Diff {
+		finalDiff := func(t *testing.T, timeout time.Duration, diffs <-chan str.Diff) str.Diff {
 			t.Helper()
 
 			var final str.Diff
