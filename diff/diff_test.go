@@ -11,6 +11,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/poy/onpar/v2"
 	"github.com/poy/onpar/v2/diff"
+	"github.com/poy/onpar/v2/diff/str"
 	"github.com/poy/onpar/v2/expect"
 	"github.com/poy/onpar/v2/matchers"
 )
@@ -99,9 +100,9 @@ func TestDiff(t *testing.T) {
 	})
 
 	for _, tt := range []struct {
-		name     string
-		a, b     any
-		expected string
+		name             string
+		actual, expected any
+		output           string
 	}{
 		{"different strings", "foo", "bar", ">foo!=bar<"},
 		{"different ints", 12, 14, ">12!=14<"},
@@ -121,9 +122,9 @@ func TestDiff(t *testing.T) {
 	} {
 		tt := tt
 		o.Spec(fmt.Sprintf("it shows diffs for %s", tt.name), func(t *testing.T) {
-			out := diff.New().Diff(tt.a, tt.b)
-			if out != tt.expected {
-				t.Fatalf("expected the diff between %v and %v to be %s; got %s", tt.a, tt.b, tt.expected, out)
+			out := diff.New().Diff(tt.actual, tt.expected)
+			if out != tt.output {
+				t.Fatalf("expected the diff between %v and %v to be %s; got %s", tt.actual, tt.expected, tt.output, out)
 			}
 		})
 	}
@@ -137,15 +138,174 @@ func TestDiff(t *testing.T) {
 	})
 
 	o.Spec("it does not hang on strings mentioned in issue 30", func(t *testing.T) {
-		out := diff.New().Diff(
-			`{"current":[{"kind":0,"at":{"seconds":1596288863,"nanos":13000000},"msg":"Something bad happened."}]}`,
-			`{"current": [{"kind": "GENERIC", "at": "2020-08-01T13:34:23.013Z", "msg": "Something bad happened."}], "history": []}`,
-		)
-		expect.Expect(t, out).To(matchers.Equal(
-			`{"current":>!= <[{"kind":>0,!= <">at":{"seconds!=GENERIC", ` +
-				`"at<":>1596!= "20<2>88!=0-0<8>63,"nanos"!=-01T13:34<:>1!=2<3>0!=.<0>0000}!=13Z"<,` +
-				`>!= <"msg":>!= <"Something bad happened."}]>!=, "history": []<}`,
-		))
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			diff.New().Diff(
+				`{"current":[{"kind":0,"at":{"seconds":1596288863,"nanos":13000000},"msg":"Something bad happened."}]}`,
+				`{"current": [{"kind": "GENERIC", "at": "2020-08-01T13:34:23.013Z", "msg": "Something bad happened."}], "history": []}`,
+			)
+		}()
+		select {
+		case <-done:
+			// This diff is not "stable" - with concurrent differs (like the
+			// str.CharDiff differ that we're exercising), we can't guarantee
+			// the same output every time.
+		case <-time.After(time.Second):
+			t.Fatalf("timed out waiting for diff to finish")
+		}
+	})
+
+	o.Spec("it always includes a basic string diff", func(t *testing.T) {
+		out := diff.New(diff.WithStringAlgos()).Diff("foobarbaz", "foobaconbaz")
+		expect.Expect(t, out).To(matchers.Equal(">foobarbaz!=foobaconbaz<"))
+	})
+
+	o.Group("with custom string algorithms", func() {
+		type testCtx struct {
+			t            *testing.T
+			algo1, algo2 *mockStringDiffAlgorithm
+			timeout      time.Duration
+			differ       *diff.Differ
+		}
+
+		o := onpar.BeforeEach(o, func(t *testing.T) testCtx {
+			algo1 := newMockStringDiffAlgorithm(t, time.Second)
+			algo2 := newMockStringDiffAlgorithm(t, time.Second)
+			timeout := time.Second
+			return testCtx{
+				t:       t,
+				algo1:   algo1,
+				algo2:   algo2,
+				timeout: timeout,
+				differ:  diff.New(diff.WithStringAlgos(algo1, algo2), diff.WithTimeout(timeout)),
+			}
+		})
+
+		o.Spec("it returns the basic diff when no better diffs are returned", func(tt testCtx) {
+			ch := make(chan str.Diff)
+			close(ch)
+			pers.Return(tt.algo1.DiffsOutput, ch)
+			pers.Return(tt.algo2.DiffsOutput, ch)
+			out := tt.differ.Diff("foobar", "foobaz")
+			expect.Expect(tt.t, out).To(matchers.Equal(">foobar!=foobaz<"))
+		})
+
+		o.Spec("it returns a better diff from an algorithm", func(tt testCtx) {
+			ch := make(chan str.Diff, 1)
+			diff := newMockDiff(tt.t, time.Second)
+			ch <- diff
+			close(ch)
+
+			pers.Return(tt.algo1.DiffsOutput, ch)
+			pers.Return(tt.algo2.DiffsOutput, ch)
+
+			pers.Return(diff.CostOutput, 2)
+			pers.Return(diff.SectionsOutput, []str.DiffSection{
+				{Type: str.TypeMatch, Actual: []rune("foob"), Expected: []rune("foob")},
+				{Type: str.TypeReplace, Actual: []rune("ar"), Expected: []rune("az")},
+			})
+
+			out := tt.differ.Diff("foobar", "foobaz")
+			expect.Expect(tt.t, out).To(matchers.Equal("foob>ar!=az<"))
+		})
+
+		o.Spec("it chooses the best diff regardless of order", func(tt testCtx) {
+			ch := make(chan str.Diff, 2)
+			diff1 := newMockDiff(tt.t, time.Second)
+			diff2 := newMockDiff(tt.t, time.Second)
+			ch <- diff1
+			ch <- diff2
+			close(ch)
+
+			pers.Return(tt.algo1.DiffsOutput, ch)
+			pers.Return(tt.algo2.DiffsOutput, ch)
+
+			pers.ConsistentlyReturn(tt.t, diff1.CostOutput, 2)
+			pers.ConsistentlyReturn(tt.t, diff1.SectionsOutput, []str.DiffSection{
+				{Type: str.TypeMatch, Actual: []rune("foob"), Expected: []rune("foob")},
+				{Type: str.TypeReplace, Actual: []rune("ar"), Expected: []rune("az")},
+			})
+
+			pers.ConsistentlyReturn(tt.t, diff2.CostOutput, 5)
+			pers.ConsistentlyReturn(tt.t, diff2.SectionsOutput, []str.DiffSection{
+				{Type: str.TypeMatch, Actual: []rune("f"), Expected: []rune("f")},
+				{Type: str.TypeReplace, Actual: []rune("oobar"), Expected: []rune("oobaz")},
+			})
+
+			out := tt.differ.Diff("foobar", "foobaz")
+			expect.Expect(tt.t, out).To(matchers.Equal("foob>ar!=az<"))
+		})
+
+		o.Spec("it respects the timeout", func(tt testCtx) {
+			ch := make(chan str.Diff, 1)
+			diff := newMockDiff(tt.t, time.Second)
+			ch <- diff
+
+			pers.Return(tt.algo1.DiffsOutput, ch)
+			pers.Return(tt.algo2.DiffsOutput, ch)
+
+			pers.Return(diff.CostOutput, 2)
+			pers.Return(diff.SectionsOutput, []str.DiffSection{
+				{Type: str.TypeMatch, Actual: []rune("foob"), Expected: []rune("foob")},
+				{Type: str.TypeReplace, Actual: []rune("ar"), Expected: []rune("az")},
+			})
+
+			stop := make(chan struct{})
+			defer close(stop)
+			out := make(chan string)
+			go func() {
+				defer close(out)
+				select {
+				case <-stop:
+				case out <- tt.differ.Diff("foobar", "foobaz"):
+				}
+			}()
+
+			gracePeriod := 10 * time.Millisecond
+			timeout := time.After(tt.timeout + gracePeriod)
+			select {
+			case <-timeout:
+				tt.t.Fatalf("did not receive output within %v", tt.timeout)
+			case out := <-out:
+				expect.Expect(tt.t, out).To(matchers.Equal("foob>ar!=az<"))
+			}
+		})
+
+		o.Spec("it runs algorithms concurrently and returns the lowest cost available", func(tt testCtx) {
+			ch1 := make(chan str.Diff, 2)
+			ch2 := make(chan str.Diff, 1)
+			diff1 := newMockDiff(tt.t, time.Second)
+			diff2 := newMockDiff(tt.t, time.Second)
+			diff3 := newMockDiff(tt.t, time.Second)
+			ch1 <- diff1
+			ch2 <- diff2
+			ch1 <- diff3
+
+			pers.Return(tt.algo1.DiffsOutput, ch1)
+			pers.Return(tt.algo2.DiffsOutput, ch2)
+
+			pers.ConsistentlyReturn(tt.t, diff1.CostOutput, 4)
+			pers.Return(diff1.SectionsOutput, []str.DiffSection{
+				{Type: str.TypeMatch, Actual: []rune("fo"), Expected: []rune("fo")},
+				{Type: str.TypeReplace, Actual: []rune("obar"), Expected: []rune("obaz")},
+			})
+
+			pers.ConsistentlyReturn(tt.t, diff2.CostOutput, 1)
+			pers.Return(diff2.SectionsOutput, []str.DiffSection{
+				{Type: str.TypeMatch, Actual: []rune("fooba"), Expected: []rune("fooba")},
+				{Type: str.TypeReplace, Actual: []rune("r"), Expected: []rune("z")},
+			})
+
+			pers.ConsistentlyReturn(tt.t, diff3.CostOutput, 2)
+			pers.Return(diff3.SectionsOutput, []str.DiffSection{
+				{Type: str.TypeMatch, Actual: []rune("foob"), Expected: []rune("foob")},
+				{Type: str.TypeReplace, Actual: []rune("ar"), Expected: []rune("az")},
+			})
+
+			out := tt.differ.Diff("foobar", "foobaz")
+			expect.Expect(tt.t, out).To(matchers.Equal("fooba>r!=z<"))
+		})
 	})
 }
 
@@ -176,7 +336,7 @@ func ExampleActual() {
 	// some string with (foo|bar) in it
 }
 
-func ExampleWithSprinter_Color() {
+func ExampleWithSprinter_color() {
 	// WithSprinter is provided for integration with any type
 	// that has an `Sprint(...any) string` method.  Here
 	// we use github.com/fatih/color.
