@@ -212,9 +212,9 @@ func (o *Onpar[T, U]) run(t *testing.T) {
 		var empty T
 		panic(fmt.Errorf("onpar: run was called on a child level (type '%T' is not *testing.T)", empty))
 	}
-	top.runSpecs(t, func(t *testing.T) *testing.T {
-		return t
-	}, nil)
+	top.runSpecs(t, func() testScope[*testing.T] {
+		return baseScope{}
+	})
 }
 
 func (o *Onpar[T, U]) child() child {
@@ -237,19 +237,33 @@ func (o *Onpar[T, U]) addSpecs() {
 	o.parent.addRunner(o.level)
 }
 
+type testScope[T any] interface {
+	before(*testing.T) T
+	after()
+}
+
+type baseScope struct {
+}
+
+func (s baseScope) before(t *testing.T) *testing.T {
+	return t
+}
+
+func (s baseScope) after() {}
+
 type runner[T any] interface {
 	name() string
-	runSpecs(t *testing.T, before func(*testing.T) T, after func(T))
+	runSpecs(t *testing.T, scope func() testScope[T])
 }
 
 type concurrentSpec[T any] struct {
 	serialSpec[T]
 }
 
-func (s concurrentSpec[T]) runSpecs(t *testing.T, before func(*testing.T) T, after func(T)) {
+func (s concurrentSpec[T]) runSpecs(t *testing.T, scope func() testScope[T]) {
 	t.Parallel()
 
-	s.serialSpec.runSpecs(t, before, after)
+	s.serialSpec.runSpecs(t, scope)
 }
 
 type serialSpec[T any] struct {
@@ -261,11 +275,33 @@ func (s serialSpec[T]) name() string {
 	return s.specName
 }
 
-func (s serialSpec[T]) runSpecs(t *testing.T, before func(*testing.T) T, after func(T)) {
-	v := before(t)
+func (s serialSpec[T]) runSpecs(t *testing.T, scope func() testScope[T]) {
+	sc := scope()
+	v := sc.before(t)
 	s.f(v)
-	if after != nil {
-		after(v)
+	sc.after()
+}
+
+type levelScope[T, U any] struct {
+	val          U
+	parentBefore func(*testing.T) T
+	childBefore  func(T) U
+	childAfter   func(U)
+	parentAfter  func()
+}
+
+func (s *levelScope[T, U]) before(t *testing.T) U {
+	parentVal := s.parentBefore(t)
+	s.val = s.childBefore(parentVal)
+	return s.val
+}
+
+func (s *levelScope[T, U]) after() {
+	if s.childAfter != nil {
+		s.childAfter(s.val)
+	}
+	if s.parentAfter != nil {
+		s.parentAfter()
 	}
 }
 
@@ -280,23 +316,19 @@ func (l *level[T, U]) name() string {
 	return l.levelName
 }
 
-func (l *level[T, U]) runSpecs(t *testing.T, before func(*testing.T) T, after func(T)) {
+func (l *level[T, U]) runSpecs(t *testing.T, scope func() testScope[T]) {
 	for _, r := range l.runners {
 		testFn := func(t *testing.T) {
-			var v T
-			childBefore := func(t *testing.T) U {
-				v = before(t)
-				return l.before(v)
-			}
-			childAfter := func(childV U) {
-				if l.after != nil {
-					l.after(childV)
-				}
-				if after != nil {
-					after(v)
+			childScope := func() testScope[U] {
+				parentScope := scope()
+				return &levelScope[T, U]{
+					parentBefore: parentScope.before,
+					childBefore:  l.before,
+					childAfter:   l.after,
+					parentAfter:  parentScope.after,
 				}
 			}
-			r.runSpecs(t, childBefore, childAfter)
+			r.runSpecs(t, childScope)
 		}
 		if r.name() == "" {
 			// If the name is empty, running the group as a sub-group would

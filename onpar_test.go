@@ -77,7 +77,7 @@ func TestNewWithBeforeEach(t *testing.T) {
 	t.Run("FakeSpecs", func(t *testing.T) {
 		o := onpar.New(t)
 
-		o.Spec("it runs a spec without a beforeeach", func(*testing.T) {
+		o.SerialSpec("it runs a spec without a beforeeach", func(*testing.T) {
 			c <- "A"
 		})
 
@@ -86,7 +86,7 @@ func TestNewWithBeforeEach(t *testing.T) {
 			return "foo"
 		})
 
-		b.Spec("it runs a spec on a BeforeEach", func(string) {
+		b.SerialSpec("it runs a spec on a BeforeEach", func(string) {
 			c <- "B"
 		})
 	})
