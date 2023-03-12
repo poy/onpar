@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/poy/onpar/v2/matchers"
+	"github.com/poy/onpar/v3/matchers"
 )
 
 func TestNot(t *testing.T) {

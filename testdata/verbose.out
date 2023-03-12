@@ -25,4 +25,4 @@
     --- PASS: TestNestedStructure/foo (0.00s)
     --- PASS: TestNestedStructure/bar (0.00s)
 PASS
-ok  	github.com/poy/onpar/v2	0.002s
+ok  	github.com/poy/onpar/v3	0.001s

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
-	. "github.com/poy/onpar/v2/expect"
+	. "github.com/poy/onpar/v3/expect"
 )
 
 type diffMatcher struct {

@@ -3,7 +3,7 @@ package matchers_test
 import (
 	"testing"
 
-	"github.com/poy/onpar/v2/matchers"
+	"github.com/poy/onpar/v3/matchers"
 )
 
 func TestHaveKey(t *testing.T) {

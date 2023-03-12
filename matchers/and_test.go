@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
-	"github.com/poy/onpar/v2/matchers"
+	"github.com/poy/onpar/v3/matchers"
 )
 
 func TestAndSuccessUsesEachMatcher(t *testing.T) {

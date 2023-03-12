@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/poy/onpar/v2"
-	"github.com/poy/onpar/v2/diff/str"
-	"github.com/poy/onpar/v2/expect"
-	"github.com/poy/onpar/v2/matchers"
+	"github.com/poy/onpar/v3"
+	"github.com/poy/onpar/v3/diff/str"
+	"github.com/poy/onpar/v3/expect"
+	"github.com/poy/onpar/v3/matchers"
 )
 
 func TestCharDiff(t *testing.T) {
