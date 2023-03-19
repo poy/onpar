@@ -3,9 +3,31 @@ package onpar_test
 import (
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/poy/onpar/v2"
+	"github.com/poy/onpar/v3"
 )
+
+const testTimeout = time.Second
+
+func TestPanicsWithMissingRun(t *testing.T) {
+	t.Parallel()
+
+	mockT := newMockTestRunner(t, testTimeout)
+	onpar.New(mockT)
+	select {
+	case cleanup := <-mockT.CleanupInput.Arg0:
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Fatalf("expected onpar to panic if Run was never called")
+			}
+		}()
+		cleanup()
+	default:
+		t.Fatalf("t.Cleanup was never called")
+	}
+}
 
 func TestSingleNestedSpec(t *testing.T) {
 	t.Parallel()
@@ -76,6 +98,7 @@ func TestNewWithBeforeEach(t *testing.T) {
 
 	t.Run("FakeSpecs", func(t *testing.T) {
 		o := onpar.New(t)
+		defer o.Run()
 
 		o.SerialSpec("it runs a spec without a beforeeach", func(*testing.T) {
 			c <- "A"
@@ -112,6 +135,7 @@ func TestGroupNestsRunCalls(t *testing.T) {
 
 	t.Run("FakeSpecs", func(t *testing.T) {
 		o := onpar.New(t)
+		defer o.Run()
 
 		sendName := func(t *testing.T) {
 			c <- t.Name()
@@ -169,6 +193,7 @@ func TestSerialSpecsAreOrdered(t *testing.T) {
 
 	t.Run("FakeSpecs", func(t *testing.T) {
 		o := onpar.New(t)
+		defer o.Run()
 
 		sendName := func(t *testing.T) {
 			c <- t.Name()
@@ -225,6 +250,7 @@ func TestUsingSuiteOutsideGroupPanics(t *testing.T) {
 		}()
 
 		o := onpar.New(t)
+		defer o.Run()
 
 		o.Group("foo", func() {
 			// The most likely scenario for a suite accidentally being used
@@ -256,6 +282,7 @@ func TestUsingParentWithoutGroupPanics(t *testing.T) {
 		}()
 
 		o := onpar.New(t)
+		defer o.Run()
 
 		o.Group("foo", func() {
 			b := onpar.BeforeEach(o, func(t *testing.T) string {
@@ -285,6 +312,7 @@ func createScaffolding(t *testing.T) <-chan *testObject {
 
 			return mockTest{t, 99, "something", obj}
 		})
+		defer o.Run()
 
 		o.AfterEach(func(tt mockTest) {
 			tt.o.Use("-AfterEach")

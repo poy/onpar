@@ -1,4 +1,4 @@
-module github.com/poy/onpar/v2
+module github.com/poy/onpar/v3
 
 go 1.18
 

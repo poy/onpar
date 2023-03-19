@@ -1,3 +1,5 @@
+//go:generate hel
+
 package onpar
 
 import (
@@ -13,8 +15,9 @@ type prefs struct {
 // Opt is an option type to pass to onpar's constructor.
 type Opt func(prefs) prefs
 
-type suite[T any] interface {
-	addRunner(runner[T])
+type suite interface {
+	Run()
+	addRunner(runner)
 	child() child
 }
 
@@ -24,9 +27,11 @@ type child interface {
 
 // Onpar stores the state of the specs and groups
 type Onpar[T, U any] struct {
+	t TestRunner
+
 	path []string
 
-	parent suite[T]
+	parent suite
 
 	// level is handled by (*Onpar[T]).Group(), which will adjust this field
 	// each time it is called. This is how onpar knows to create nested `t.Run`
@@ -45,6 +50,15 @@ type Onpar[T, U any] struct {
 	// childSuite's specs to the parent.
 	childSuite child
 	childPath  []string
+
+	runCalled bool
+}
+
+// TestRunner matches the methods in *testing.T that the top level onpar
+// (returned from New) needs in order to work.
+type TestRunner interface {
+	Run(name string, fn func(*testing.T)) bool
+	Cleanup(func())
 }
 
 // New creates a new Onpar suite. The top-level onpar suite must be constructed
@@ -53,13 +67,14 @@ type Onpar[T, U any] struct {
 // It's normal to construct the top-level suite with a BeforeEach by doing the
 // following:
 //
-//     o := BeforeEach(New(t), setupFn)
-func New(t *testing.T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
+//	o := BeforeEach(New(t), setupFn)
+func New[T TestRunner](t T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 	p := prefs{}
 	for _, opt := range opts {
 		p = opt(p)
 	}
 	o := Onpar[*testing.T, *testing.T]{
+		t:             t,
 		canBeforeEach: true,
 		level: &level[*testing.T, *testing.T]{
 			before: func(t *testing.T) *testing.T {
@@ -68,9 +83,25 @@ func New(t *testing.T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 		},
 	}
 	t.Cleanup(func() {
-		o.run(t)
+		if !o.runCalled {
+			panic("onpar: Run was never called [hint: missing 'defer o.Run()'?]")
+		}
 	})
 	return &o
+}
+
+// Run runs all of o's tests. Typically this will be called in a `defer`
+// immediately after o is defined:
+//
+//	o := onpar.BeforeEach(onpar.New(t), setupFn)
+//	defer o.Run()
+func (o *Onpar[T, U]) Run() {
+	if o.parent == nil {
+		o.run(o.t)
+		o.runCalled = true
+		return
+	}
+	o.parent.Run()
 }
 
 // BeforeEach creates a new child Onpar suite with the requested function as the
@@ -140,7 +171,7 @@ func (o *Onpar[T, U]) SerialSpec(name string, f func(U)) {
 	o.addRunner(spec)
 }
 
-func (o *Onpar[T, U]) addRunner(r runner[U]) {
+func (o *Onpar[T, U]) addRunner(r runner) {
 	o.level.runners = append(o.level.runners, r)
 }
 
@@ -190,7 +221,7 @@ func (o *Onpar[T, U]) AfterEach(f func(U)) {
 	o.level.after = f
 }
 
-func (o *Onpar[T, U]) run(t *testing.T) {
+func (o *Onpar[T, U]) run(t TestRunner) {
 	if o.child() != nil {
 		// This happens when New is called before BeforeEach, e.g.:
 		//
@@ -204,7 +235,7 @@ func (o *Onpar[T, U]) run(t *testing.T) {
 		o.child().addSpecs()
 		o.childSuite = nil
 	}
-	top, ok := any(o.level).(runner[*testing.T])
+	top, ok := any(o.level).(groupRunner[*testing.T])
 	if !ok {
 		// This should be impossible - the only place that `run` is called is in
 		// `New()`, which is only capable of returning `*Onpar[*testing.T,
@@ -251,19 +282,28 @@ func (s baseScope) before(t *testing.T) *testing.T {
 
 func (s baseScope) after() {}
 
-type runner[T any] interface {
+type runner interface {
 	name() string
-	runSpecs(t *testing.T, scope func() testScope[T])
+}
+
+type groupRunner[T any] interface {
+	runner
+	runSpecs(t TestRunner, scope func() testScope[T])
+}
+
+type specRunner[T any] interface {
+	runner
+	run(t *testing.T, scope func() testScope[T])
 }
 
 type concurrentSpec[T any] struct {
 	serialSpec[T]
 }
 
-func (s concurrentSpec[T]) runSpecs(t *testing.T, scope func() testScope[T]) {
+func (s concurrentSpec[T]) run(t *testing.T, scope func() testScope[T]) {
 	t.Parallel()
 
-	s.serialSpec.runSpecs(t, scope)
+	s.serialSpec.run(t, scope)
 }
 
 type serialSpec[T any] struct {
@@ -275,7 +315,7 @@ func (s serialSpec[T]) name() string {
 	return s.specName
 }
 
-func (s serialSpec[T]) runSpecs(t *testing.T, scope func() testScope[T]) {
+func (s serialSpec[T]) run(t *testing.T, scope func() testScope[T]) {
 	sc := scope()
 	v := sc.before(t)
 	s.f(v)
@@ -309,34 +349,42 @@ type level[T, U any] struct {
 	levelName string
 	before    func(T) U
 	after     func(U)
-	runners   []runner[U]
+	runners   []runner
 }
 
 func (l *level[T, U]) name() string {
 	return l.levelName
 }
 
-func (l *level[T, U]) runSpecs(t *testing.T, scope func() testScope[T]) {
+func (l *level[T, U]) runSpecs(t TestRunner, scope func() testScope[T]) {
 	for _, r := range l.runners {
-		testFn := func(t *testing.T) {
-			childScope := func() testScope[U] {
-				parentScope := scope()
-				return &levelScope[T, U]{
-					parentBefore: parentScope.before,
-					childBefore:  l.before,
-					childAfter:   l.after,
-					parentAfter:  parentScope.after,
-				}
+		childScope := func() testScope[U] {
+			parentScope := scope()
+			return &levelScope[T, U]{
+				parentBefore: parentScope.before,
+				childBefore:  l.before,
+				childAfter:   l.after,
+				parentAfter:  parentScope.after,
 			}
-			r.runSpecs(t, childScope)
 		}
-		if r.name() == "" {
-			// If the name is empty, running the group as a sub-group would
-			// result in ugly output. Just run the test function at this level
-			// instead.
-			testFn(t)
-			continue
+		switch r := r.(type) {
+		case groupRunner[U]:
+			if r.name() == "" {
+				// If the name is empty, running the group as a sub-group would
+				// result in ugly output. Just run the test function at this level
+				// instead.
+				r.runSpecs(t, childScope)
+				return
+			}
+			t.Run(r.name(), func(t *testing.T) {
+				r.runSpecs(t, childScope)
+			})
+		case specRunner[U]:
+			t.Run(r.name(), func(t *testing.T) {
+				r.run(t, childScope)
+			})
+		default:
+			panic(fmt.Errorf("onpar: spec runner type [%T] is not supported", r))
 		}
-		t.Run(r.name(), testFn)
 	}
 }

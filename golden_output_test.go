@@ -5,7 +5,7 @@ package onpar_test
 import (
 	"testing"
 
-	"github.com/poy/onpar/v2"
+	"github.com/poy/onpar/v3"
 )
 
 func TestNestedStructure(t *testing.T) {
@@ -15,6 +15,7 @@ func TestNestedStructure(t *testing.T) {
 	// test that the test names use the expected paths. They cannot prove that
 	// each group has its own t.Run.
 	top := onpar.New(t)
+	defer top.Run()
 
 	top.Spec("foo", func(*testing.T) {})
 

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"git.sr.ht/~nelsam/hel/v4/vegr"
-	"github.com/poy/onpar/v2/matchers"
+	"github.com/poy/onpar/v3/matchers"
 )
 
 type mockDiffMatcher struct {

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"git.sr.ht/~nelsam/hel/v4/vegr"
-	"github.com/poy/onpar/v2/diff/str"
+	"github.com/poy/onpar/v3/diff/str"
 )
 
 type mockStringDiffAlgorithm struct {

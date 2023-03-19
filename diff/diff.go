@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/poy/onpar/v2/diff/str"
+	"github.com/poy/onpar/v3/diff/str"
 )
 
 var DefaultStrDiffs = []StringDiffAlgorithm{str.NewCharDiff()}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/poy/onpar/v2/matchers"
+	"github.com/poy/onpar/v3/matchers"
 )
 
 func TestHaveOccurred(t *testing.T) {

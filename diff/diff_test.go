@@ -9,11 +9,11 @@ import (
 
 	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
 	"github.com/fatih/color"
-	"github.com/poy/onpar/v2"
-	"github.com/poy/onpar/v2/diff"
-	"github.com/poy/onpar/v2/diff/str"
-	"github.com/poy/onpar/v2/expect"
-	"github.com/poy/onpar/v2/matchers"
+	"github.com/poy/onpar/v3"
+	"github.com/poy/onpar/v3/diff"
+	"github.com/poy/onpar/v3/diff/str"
+	"github.com/poy/onpar/v3/expect"
+	"github.com/poy/onpar/v3/matchers"
 )
 
 type testNestedStruct struct {

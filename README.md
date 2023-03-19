@@ -34,18 +34,20 @@ write flaky tests.
 
 ## Running
 
-Previous versions of onpar would require the caller to `defer o.Run(t)`. This is
-no longer necessary. the `New` constructor takes care of that now, relying on
-`t.Cleanup()` to ensure that `run` is only called after all of the specs and
-setup/teardown have been defined.
+After constructing a top-level `*Onpar`, `defer o.Run()`.
+
+If `o.Run()` is never called, the test will panic during `t.Cleanup`. This is to
+prevent false passes when `o.Run()` is accidentally omitted.
 
 ### Assertions
-OnPar provides built-in assertion mechanisms using `Expect` statement to make
-expectations. Here is some more information about `Expect` and some of the
-matchers that come with OnPar.
+OnPar provides an expectation library in the `expect` sub-package. Here is some
+more information about `Expect` and some of the matchers that are available:
 
 - [Expect](expect/README.md)
 - [Matchers](matchers/README.md)
+
+However, OnPar is not opinionated - any assertion library or framework may be
+used within specs.
 
 ### Specs
 
@@ -69,6 +71,7 @@ func TestSpecs(t *testing.T) {
     o := onpar.BeforeEach(onpar.New(t), func(t *testing.T) testContext {
         return testContext{t: t, a: 99, b: 101.0}
     })
+    defer o.Run()
 
     o.AfterEach(func(tt testContext) {
             // ...
@@ -111,6 +114,7 @@ func TestGrouping(t *testing.T) {
     o := onpar.BeforeEach(onpar.New(t), func(t *testing.T) topContext {
         return topContext{t: t, a: 99, b: 101}
     }
+    defer o.Run()
 
     o.Group("some-group", func() {
         type groupContext struct {
@@ -151,6 +155,7 @@ func TestRunOrder(t *testing.T) {
         // Spec "C": Order = 1
         return topContext{t: t, i: 99, s: "foo"}
     })
+    defer o.Run()
 
     o.AfterEach(func(tt topContext) {
         // Spec "A": Order = 4
