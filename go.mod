@@ -13,3 +13,10 @@ require (
 	github.com/poy/onpar v1.1.2 // indirect
 	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
 )
+
+// go modules make anything above v0 extremely hard to support, so we're
+// scrapping any versions above v0. From now on, onpar will follow v0.x.x
+// versioning.
+//
+// This retract directive retracts all releases beyond v0.
+retract [v2.0.0, v2.0.4]
