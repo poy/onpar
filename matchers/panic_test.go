@@ -3,7 +3,7 @@ package matchers_test
 import (
 	"testing"
 
-	"github.com/poy/onpar/v3/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestPanic(t *testing.T) {

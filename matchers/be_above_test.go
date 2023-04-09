@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/poy/onpar/v3/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestAbove(t *testing.T) {

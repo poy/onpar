@@ -1,6 +1,6 @@
 package diff
 
-import "github.com/poy/onpar/v3/diff/str"
+import "github.com/poy/onpar/diff/str"
 
 type baseDiff struct {
 	actual, expected []rune

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/poy/onpar/v3"
+	"github.com/poy/onpar"
 )
 
 const testTimeout = time.Second

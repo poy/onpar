@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
-	"github.com/poy/onpar/v3/matchers"
+	"git.sr.ht/~nelsam/hel/pkg/pers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestOrFailureUsesEachMatcher(t *testing.T) {

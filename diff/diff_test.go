@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
+	"git.sr.ht/~nelsam/hel/pkg/pers"
 	"github.com/fatih/color"
-	"github.com/poy/onpar/v3"
-	"github.com/poy/onpar/v3/diff"
-	"github.com/poy/onpar/v3/diff/str"
-	"github.com/poy/onpar/v3/expect"
-	"github.com/poy/onpar/v3/matchers"
+	"github.com/poy/onpar"
+	"github.com/poy/onpar/diff"
+	"github.com/poy/onpar/diff/str"
+	"github.com/poy/onpar/expect"
+	"github.com/poy/onpar/matchers"
 )
 
 type testNestedStruct struct {
@@ -34,6 +34,7 @@ type testStruct struct {
 
 func TestDiff(t *testing.T) {
 	o := onpar.New(t)
+	defer o.Run()
 
 	for _, tt := range []struct {
 		name  string

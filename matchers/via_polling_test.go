@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/poy/onpar/v3/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestViaPollingFailsPolls100Times(t *testing.T) {
