@@ -9,14 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/poy/onpar/v3"
-	"github.com/poy/onpar/v3/diff/str"
-	"github.com/poy/onpar/v3/expect"
-	"github.com/poy/onpar/v3/matchers"
+	"github.com/poy/onpar"
+	"github.com/poy/onpar/diff/str"
+	"github.com/poy/onpar/expect"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestCharDiff(t *testing.T) {
 	o := onpar.New(t)
+	defer o.Run()
 
 	matchReplace := func(t *testing.T, start str.Type, l ...string) []str.DiffSection {
 		// matchReplace is used to generate match/replace cadence for expected

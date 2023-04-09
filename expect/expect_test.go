@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"git.sr.ht/~nelsam/hel/v4/pkg/pers"
-	. "github.com/poy/onpar/v3/expect"
+	"git.sr.ht/~nelsam/hel/pkg/pers"
+	. "github.com/poy/onpar/expect"
 )
 
 type diffMatcher struct {

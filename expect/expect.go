@@ -4,7 +4,7 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/poy/onpar/v3/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 // ToMatcher is a type that can be passed to (*To).To().

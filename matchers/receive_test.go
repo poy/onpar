@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/poy/onpar/v3/matchers"
+	"github.com/poy/onpar/matchers"
 )
 
 func TestReceiveSucceedsForABufferedChannel(t *testing.T) {

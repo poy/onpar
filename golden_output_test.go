@@ -5,7 +5,7 @@ package onpar_test
 import (
 	"testing"
 
-	"github.com/poy/onpar/v3"
+	"github.com/poy/onpar"
 )
 
 func TestNestedStructure(t *testing.T) {
