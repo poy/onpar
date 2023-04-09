@@ -1,5 +1,5 @@
 # onpar
-[![GoDoc][go-doc-badge]][go-doc] [![travis][travis-badge]][travis]
+[![docs][pkg-docs-badge]][pkg-docs] [![gha][gha-badge]][gha]
 
 Parallel testing framework for Go
 
@@ -224,7 +224,7 @@ The `BeforeEach` is a gatekeeper for arguments. The returned values from
 `BeforeEach` are required for the following `Spec`s. Child `Group`s are also
 passed what their direct parent `BeforeEach` returns.
 
-[go-doc-badge]:             https://pkg.go.dev/github.com/poy/onpar?status.svg
-[go-doc]:                   https://pkg.go.dev/github.com/poy/onpar
-[travis-badge]:             https://travis-ci.org/poy/onpar.svg?branch=master
-[travis]:                   https://travis-ci.org/poy/onpar?branch=master
+[pkg-docs-badge]:             https://pkg.go.dev/badge/github.com/poy/onpar.svg
+[pkg-docs]:                   https://pkg.go.dev/github.com/poy/onpar
+[gha-badge]:                  https://github.com/poy/onpar/actions/workflows/unit-test.yml/badge.svg
+[gha]:                        https://github.com/poy/onpar/actions/workflows/unit-test.yml
