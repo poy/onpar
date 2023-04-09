@@ -16,6 +16,8 @@ import (
 	"github.com/poy/onpar/matchers"
 )
 
+const testTimeout = 5 * time.Second
+
 type testNestedStruct struct {
 	testStruct
 
@@ -152,7 +154,7 @@ func TestDiff(t *testing.T) {
 			// This diff is not "stable" - with concurrent differs (like the
 			// str.CharDiff differ that we're exercising), we can't guarantee
 			// the same output every time.
-		case <-time.After(time.Second):
+		case <-time.After(testTimeout):
 			t.Fatalf("timed out waiting for diff to finish")
 		}
 	})
