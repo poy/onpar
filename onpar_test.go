@@ -36,7 +36,7 @@ func TestSingleNestedSpec(t *testing.T) {
 	objs := chanToSlice(c)
 
 	if len(objs) != 4 {
-		t.Fatalf("expected objs (len=%d) to have len %d", len(objs), 3)
+		t.Fatalf("expected objs (len=%d) to have len %d", len(objs), 4)
 	}
 
 	objA := findSpec(objs, "DA-A")

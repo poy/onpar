@@ -25,6 +25,40 @@ type child interface {
 	addSpecs()
 }
 
+// Table is an entry to be used in table tests.
+type Table[T, U, V any] struct {
+	parent *Onpar[T, U]
+	spec   func(U, V)
+}
+
+// TableSpec returns a Table type which may be used to declare table tests. The
+// spec argument is the test that will be run for each entry in the table.
+//
+// This is effectively syntactic sugar for looping over table tests and calling
+// `parent.Spec` for each entry in the table.
+func TableSpec[T, U, V any](parent *Onpar[T, U], spec func(U, V)) Table[T, U, V] {
+	return Table[T, U, V]{parent: parent, spec: spec}
+}
+
+// Entry adds an entry to t using entry as the value for this table entry.
+func (t Table[T, U, V]) Entry(name string, entry V) Table[T, U, V] {
+	t.parent.Spec(name, func(v U) {
+		t.spec(v, entry)
+	})
+	return t
+}
+
+// FnEntry adds an entry to t that calls setup in order to get its entry value.
+// The value from the BeforeEach will be passed to setup, and then both values
+// will be passed to the table spec.
+func (t Table[T, U, V]) FnEntry(name string, setup func(U) V) Table[T, U, V] {
+	t.parent.Spec(name, func(v U) {
+		entry := setup(v)
+		t.spec(v, entry)
+	})
+	return t
+}
+
 // Onpar stores the state of the specs and groups
 type Onpar[T, U any] struct {
 	t TestRunner
