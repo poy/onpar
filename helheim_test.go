@@ -33,6 +33,12 @@ type mockTestRunner struct {
 		MockPanicker      ret.Panicker
 		Ret0              chan bool
 	}
+	FailedCalled chan bool
+	FailedOutput struct {
+		MockReturnBlocker ret.Blocker
+		MockPanicker      ret.Panicker
+		Ret0              chan bool
+	}
 	CleanupCalled chan bool
 	CleanupInput  struct {
 		Arg0 chan func()
@@ -51,6 +57,10 @@ func newMockTestRunner(t vegr.T, timeout time.Duration) *mockTestRunner {
 	m.RunOutput.MockReturnBlocker = vegr.BlockChan()
 	m.RunOutput.MockPanicker = make(ret.Panicker, 100)
 	m.RunOutput.Ret0 = make(chan bool, 100)
+	m.FailedCalled = make(chan bool, 100)
+	m.FailedOutput.MockReturnBlocker = vegr.BlockChan()
+	m.FailedOutput.MockPanicker = make(ret.Panicker, 100)
+	m.FailedOutput.Ret0 = make(chan bool, 100)
 	m.CleanupCalled = make(chan bool, 100)
 	m.CleanupInput.Arg0 = make(chan func(), 100)
 	m.CleanupOutput.MockReturnBlocker = vegr.BlockChan()
@@ -63,6 +73,12 @@ func (m *mockTestRunner) Run(name string, fn func(*testing.T)) (ret0 bool) {
 	m.RunInput.Name <- name
 	m.RunInput.Fn <- fn
 	vegr.PopulateReturns(m.t, "Run", m.timeout, m.RunOutput, &ret0)
+	return ret0
+}
+func (m *mockTestRunner) Failed() (ret0 bool) {
+	m.t.Helper()
+	m.FailedCalled <- true
+	vegr.PopulateReturns(m.t, "Failed", m.timeout, m.FailedOutput, &ret0)
 	return ret0
 }
 func (m *mockTestRunner) Cleanup(arg0 func()) {

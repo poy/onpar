@@ -33,6 +33,61 @@ func TestPanicsWithMissingRun(t *testing.T) {
 			t.Fatalf("expected onpar to panic if Run was never called")
 		}
 	}()
+
+	pers.Expect(seq, mockT, "Failed", pers.Returning(false))
+	cleanup()
+}
+
+func TestMissingRunIsNotMentionedIfTestPanics(t *testing.T) {
+	t.Parallel()
+
+	mockT := newMockTestRunner(t, testTimeout)
+	seq := pers.CallSequence(t)
+	var cleanup func()
+	pers.Expect(seq, mockT, "Cleanup", pers.StoreArgs(&cleanup))
+
+	onpar.New(mockT)
+
+	seq.Check(t)
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatalf("expected test panic to surface")
+		}
+		msg, ok := r.(string)
+		if !ok {
+			t.Fatalf("expected test panic to be surfaced as a string")
+		}
+		if strings.Contains(msg, "missing 'defer o.Run()'") {
+			t.Fatalf("did not expect onpar to mention missing o.Run when calling context panicked")
+		}
+	}()
+
+	pers.Expect(seq, mockT, "Failed", pers.Returning(false))
+	defer cleanup()
+	panic("boom")
+}
+
+func TestMissingRunIsNotMentionedIfTestIsFailed(t *testing.T) {
+	t.Parallel()
+
+	mockT := newMockTestRunner(t, testTimeout)
+	seq := pers.CallSequence(t)
+	var cleanup func()
+	pers.Expect(seq, mockT, "Cleanup", pers.StoreArgs(&cleanup))
+
+	onpar.New(mockT)
+
+	seq.Check(t)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("expected onpar not to panic if the test is failed")
+		}
+	}()
+
+	pers.Expect(seq, mockT, "Failed", pers.Returning(true))
 	cleanup()
 }
 
@@ -65,6 +120,8 @@ func TestMissingRunIsNotMentionedWithSpecPanic(t *testing.T) {
 			t.Fatalf("did not expect onpar to mention missing o.Run when o.Run was called")
 		}
 	}()
+
+	pers.Expect(seq, mockT, "Failed", pers.Returning(false))
 	defer cleanup()
 	o.Run()
 }
