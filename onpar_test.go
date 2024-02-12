@@ -2,9 +2,11 @@ package onpar_test
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
+	"git.sr.ht/~nelsam/hel/pkg/pers"
 	"github.com/poy/onpar"
 )
 
@@ -14,19 +16,57 @@ func TestPanicsWithMissingRun(t *testing.T) {
 	t.Parallel()
 
 	mockT := newMockTestRunner(t, testTimeout)
+	var cleanup func()
+	seq := pers.CallSequence(t)
+	pers.Expect(seq, mockT, "Cleanup", pers.StoreArgs(&cleanup))
+
 	onpar.New(mockT)
-	select {
-	case cleanup := <-mockT.CleanupInput.Arg0:
-		defer func() {
-			r := recover()
-			if r == nil {
-				t.Fatalf("expected onpar to panic if Run was never called")
-			}
-		}()
-		cleanup()
-	default:
-		t.Fatalf("t.Cleanup was never called")
+
+	seq.Check(t)
+
+	if cleanup == nil {
+		t.Fatalf("expected Cleanup to be called with a cleanup function")
 	}
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatalf("expected onpar to panic if Run was never called")
+		}
+	}()
+	cleanup()
+}
+
+func TestMissingRunIsNotMentionedWithSpecPanic(t *testing.T) {
+	t.Parallel()
+
+	mockT := newMockTestRunner(t, testTimeout)
+	seq := pers.CallSequence(t)
+	var cleanup func()
+	pers.Expect(seq, mockT, "Cleanup", pers.StoreArgs(&cleanup))
+	pers.Panic(mockT.RunOutput, "boom")
+
+	o := onpar.New(mockT)
+	o.Spec("boom", func(t *testing.T) {
+		panic("boom")
+	})
+
+	seq.Check(t)
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatalf("expected child panic to surface")
+		}
+		msg, ok := r.(string)
+		if !ok {
+			t.Fatalf("expected child panic to be surfaced as a string")
+		}
+		if strings.Contains(msg, "missing 'defer o.Run()'") {
+			t.Fatalf("did not expect onpar to mention missing o.Run when o.Run was called")
+		}
+	}()
+	defer cleanup()
+	o.Run()
 }
 
 func TestSingleNestedSpec(t *testing.T) {

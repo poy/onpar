@@ -131,8 +131,8 @@ func New[T TestRunner](t T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 //	defer o.Run()
 func (o *Onpar[T, U]) Run() {
 	if o.parent == nil {
-		o.run(o.t)
 		o.runCalled = true
+		o.run(o.t)
 		return
 	}
 	o.parent.Run()

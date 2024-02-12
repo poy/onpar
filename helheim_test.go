@@ -12,6 +12,12 @@ import (
 	"time"
 
 	"git.sr.ht/~nelsam/hel/vegr"
+	"git.sr.ht/~nelsam/hel/vegr/ret"
+)
+
+var (
+	_ = vegr.EnforceVersion(6 - vegr.MinVersion)
+	_ = vegr.EnforceVersion(vegr.MaxVersion - 6)
 )
 
 type mockTestRunner struct {
@@ -23,11 +29,17 @@ type mockTestRunner struct {
 		Fn   chan func(*testing.T)
 	}
 	RunOutput struct {
-		Ret0 chan bool
+		MockReturnBlocker ret.Blocker
+		MockPanicker      ret.Panicker
+		Ret0              chan bool
 	}
 	CleanupCalled chan bool
 	CleanupInput  struct {
 		Arg0 chan func()
+	}
+	CleanupOutput struct {
+		MockReturnBlocker ret.Blocker
+		MockPanicker      ret.Panicker
 	}
 }
 
@@ -36,9 +48,13 @@ func newMockTestRunner(t vegr.T, timeout time.Duration) *mockTestRunner {
 	m.RunCalled = make(chan bool, 100)
 	m.RunInput.Name = make(chan string, 100)
 	m.RunInput.Fn = make(chan func(*testing.T), 100)
+	m.RunOutput.MockReturnBlocker = vegr.BlockChan()
+	m.RunOutput.MockPanicker = make(ret.Panicker, 100)
 	m.RunOutput.Ret0 = make(chan bool, 100)
 	m.CleanupCalled = make(chan bool, 100)
 	m.CleanupInput.Arg0 = make(chan func(), 100)
+	m.CleanupOutput.MockReturnBlocker = vegr.BlockChan()
+	m.CleanupOutput.MockPanicker = make(ret.Panicker, 100)
 	return m
 }
 func (m *mockTestRunner) Run(name string, fn func(*testing.T)) (ret0 bool) {
@@ -53,4 +69,5 @@ func (m *mockTestRunner) Cleanup(arg0 func()) {
 	m.t.Helper()
 	m.CleanupCalled <- true
 	m.CleanupInput.Arg0 <- arg0
+	vegr.PopulateReturns(m.t, "Cleanup", m.timeout, m.CleanupOutput)
 }
