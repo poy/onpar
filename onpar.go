@@ -92,6 +92,7 @@ type Onpar[T, U any] struct {
 // (returned from New) needs in order to work.
 type TestRunner interface {
 	Run(name string, fn func(*testing.T)) bool
+	Failed() bool
 	Cleanup(func())
 }
 
@@ -117,6 +118,12 @@ func New[T TestRunner](t T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 		},
 	}
 	t.Cleanup(func() {
+		if t.Failed() {
+			return
+		}
+		if r := recover(); r != nil {
+			panic(r)
+		}
 		if !o.runCalled {
 			panic("onpar: Run was never called [hint: missing 'defer o.Run()'?]")
 		}
@@ -131,8 +138,8 @@ func New[T TestRunner](t T, opts ...Opt) *Onpar[*testing.T, *testing.T] {
 //	defer o.Run()
 func (o *Onpar[T, U]) Run() {
 	if o.parent == nil {
-		o.run(o.t)
 		o.runCalled = true
+		o.run(o.t)
 		return
 	}
 	o.parent.Run()

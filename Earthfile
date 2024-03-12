@@ -1,7 +1,7 @@
 VERSION 0.7
 
 # Make sure these are up to date
-ARG goversion=1.20
+ARG goversion=1.21
 ARG distro=alpine3.17
 
 FROM golang:${goversion}-${distro}
