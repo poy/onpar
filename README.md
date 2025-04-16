@@ -3,6 +3,40 @@
 
 Parallel testing framework for Go
 
+## Quick Start
+
+1. Add the dependency: `go get github.com/poy/onpar@latest`
+2. Write a test:
+
+``` go
+func TestFoo(t *testing.T) {
+    type testCtx struct {
+        // Embedding *testing.T allows us to pass the testCtx directly to most
+        // assertion libraries.
+        *testing.T
+
+        someVal somepkg.SomeType
+    }
+    o := onpar.BeforeEach(onpar.New(t), func(t *testing.T) testCtx {
+        return testCtx{
+            T: t,
+            someVal: somepkg.NewSomeType(),
+        }
+    }
+    defer o.Run()
+
+    o.Spec("a test case", func(t testCtx) {
+        // We shadow the "t" variable to prevent child tests from asserting
+        // on the parent t, just like common t.Run semantics.
+        if t.someVal.SomeMethod() != anExpectation {
+            t.Fatalf("expected %q to equal %q", t.someVal.SomeMethod(), anExpectation)
+        }
+    })
+}
+```
+
+3. Run the test: `$ go test`
+
 ## Goals
 
 - Provide structured testing, with per-spec setup and teardown.
@@ -14,18 +48,19 @@ Parallel testing framework for Go
 - Run tests in parallel by default.
   - Most of the time, well-written unit tests are perfectly capable of running
     in parallel, and sometimes running tests in parallel can uncover extra bugs.
-    This should be the default.
+    In onpar, this is the default.
 - Work within standard go test functions, simply wrapping standard `t.Run`
   semantics.
   - `onpar` should not feel utterly alien to people used to standard go testing.
     It does some extra work to allow structured tests, but for the most part it
-    isn't hiding any complicated logic - it mostly just calls `t.Run`.
+    isn't hiding any complicated logic - it mostly just calls the beforeeach,
+    spec, and aftereach in `t.Run`.
 
 Onpar provides a BDD style of testing, similar to what you might find with
 something like ginkgo or goconvey. The biggest difference between onpar and its
-peers is that a `BeforeEach` function in `onpar` may return a value, and that
-value will become the parameter required in child calls to `Spec`, `AfterEach`,
-and `BeforeEach`.
+peers is that a `BeforeEach` function in `onpar` must return a value, and that
+value is the parameter required in child calls to `Spec`, `AfterEach`, and
+`BeforeEach`.
 
 This allows you to write tests that share memory between `BeforeEach`, `Spec`,
 and `AfterEach` functions _without sharing memory with other tests_. When used
@@ -179,7 +214,7 @@ func TestRunOrder(t *testing.T) {
                 t *testing.T
                 f float64
             }
-            o.BeforeEach(func(tt topContext) dbContext {
+            o := onpar.BeforeEach(o, func(tt topContext) dbContext {
                 // Spec "B": Order = 2
                 // Spec "C": Order = 2
                 return dbContext{t: tt.t, f: 101}
@@ -200,7 +235,7 @@ func TestRunOrder(t *testing.T) {
         })
 
         o.Group("DC", func() {
-            o.BeforeEach(func(tt topContext) *testing.T {
+            o := onpar.BeforeEach(o, func(tt topContext) *testing.T {
                 // Will not be invoked (there are no specs)
             })
 
