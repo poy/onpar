@@ -22,7 +22,7 @@ func TestFoo(t *testing.T) {
             T: t,
             someVal: somepkg.NewSomeType(),
         }
-    }
+    })
     defer o.Run()
 
     o.Spec("a test case", func(t testCtx) {
