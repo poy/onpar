@@ -150,6 +150,31 @@ func TestSingleNestedSpec(t *testing.T) {
 	}
 }
 
+func TestAfterEachAfterCleanup(t *testing.T) {
+	t.Parallel()
+
+	var lastRun string
+	t.Run("FakeSpecs", func(t *testing.T) {
+		o := onpar.BeforeEach(onpar.New(t), func(t *testing.T) *testing.T {
+			t.Cleanup(func() {
+				lastRun = "cleanup"
+			})
+			return t
+		})
+		defer o.Run()
+
+		o.AfterEach(func(t *testing.T) {
+			lastRun = "afterEach"
+		})
+
+		o.Spec("foo", func(t *testing.T) {})
+	})
+
+	if lastRun != "afterEach" {
+		t.Fatalf("expected afterEach to be the very last function to run, after all other test cleanup")
+	}
+}
+
 func TestInvokeFirstChildAndPeerSpec(t *testing.T) {
 	t.Parallel()
 	c := createScaffolding(t)

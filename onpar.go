@@ -80,13 +80,6 @@ func (t *GroupTable[T, U, V]) Entry(name string, entry V) *GroupTable[T, U, V] {
 	return t
 }
 
-// FnEntry adds an entry to t that calls setup in order to get its entry value.
-// The value from the BeforeEach will be passed to setup, and then both values
-// will be passed to the table spec.
-func (t *GroupTable[T, U, V]) FnEntry(name string, setup func(U) V) *GroupTable[T, U, V] {
-	return t
-}
-
 // Onpar stores the state of the specs and groups
 type Onpar[T, U any] struct {
 	t TestRunner
@@ -386,9 +379,9 @@ func (s serialSpec[T]) name() string {
 
 func (s serialSpec[T]) run(t *testing.T, scope func() testScope[T]) {
 	sc := scope()
+	t.Cleanup(sc.after)
 	v := sc.before(t)
 	s.f(v)
-	sc.after()
 }
 
 type levelScope[T, U any] struct {
